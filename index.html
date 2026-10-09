@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GenLab Prototipo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
+<style>
+/* Concepto: aplicación de laboratorio, barra lateral por rol, área de trabajo clara, estados como fichas de color */
+:root{
+  --bg:#EEF2F4; --surface:#FFFFFF; --surface2:#F6F8F9; --ink:#14232E; --muted:#5B6B77; --line:#D8E0E5;
+  --accent:#0B6E7A; --accent-ink:#FFFFFF; --accent-soft:#DDF0F2;
+  --good:#1F7A4D; --good-soft:#DDF3E7; --warn:#8A5A00; --warn-soft:#FBEBC8; --bad:#B3321F; --bad-soft:#FBE0DB; --info:#2A5DA8; --info-soft:#DEE9F8;
+  --urgent:#B3321F;
+  --f-body:'IBM Plex Sans',system-ui,sans-serif; --f-mono:'IBM Plex Mono',ui-monospace,monospace; --f-disp:'Fraunces',Georgia,serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E171C; --surface:#162229; --surface2:#1B2A32; --ink:#E6EEF2; --muted:#94A6B1; --line:#2A3B45;
+  --accent:#4FB7C3; --accent-ink:#06242A; --accent-soft:#16363C;
+  --good:#5BC58C; --good-soft:#163A29; --warn:#E4B04F; --warn-soft:#3B2D0F; --bad:#F0806E; --bad-soft:#40201B; --info:#7FA9E8; --info-soft:#1B2D49; --urgent:#F0806E; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E171C; --surface:#162229; --surface2:#1B2A32; --ink:#E6EEF2; --muted:#94A6B1; --line:#2A3B45;
+  --accent:#4FB7C3; --accent-ink:#06242A; --accent-soft:#16363C;
+  --good:#5BC58C; --good-soft:#163A29; --warn:#E4B04F; --warn-soft:#3B2D0F; --bad:#F0806E; --bad-soft:#40201B; --info:#7FA9E8; --info-soft:#1B2D49; --urgent:#F0806E; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+#app{display:grid;grid-template-columns:230px minmax(0,1fr);grid-template-rows:auto 1fr;height:100%}
+header.top{grid-column:1/3;display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--line)}
+.brand{font-family:var(--f-disp);font-size:20px;font-weight:600;color:var(--accent);letter-spacing:.2px;margin-right:8px}
+.brand small{font-family:var(--f-body);font-size:11px;color:var(--muted);font-weight:400;margin-left:6px;letter-spacing:0}
+.sel{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+select,input[type=text],input[type=password],input[type=email],input[type=number],input[type=date],textarea{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 9px;min-width:0;max-width:100%}
+select:focus,input:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+header .sp{flex:1}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+nav.side{background:var(--surface);border-right:1px solid var(--line);padding:12px 8px;overflow:auto}
+nav.side .who{padding:6px 10px 12px;border-bottom:1px solid var(--line);margin-bottom:8px}
+nav.side .who b{display:block;font-size:13px}
+nav.side .who span{font-size:12px;color:var(--muted)}
+nav.side button{display:flex;width:100%;justify-content:space-between;align-items:center;text-align:left;background:none;border:0;border-radius:6px;padding:8px 10px;cursor:pointer;color:var(--ink)}
+nav.side button:hover{background:var(--surface2)}
+nav.side button.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.badge{background:var(--bad);color:#fff;border-radius:10px;font-size:11px;padding:0 6px;min-width:18px;text-align:center}
+main{overflow:auto;padding:20px 24px 60px;min-width:0}
+.pg-h{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.pg-h h1{font-family:var(--f-body);font-size:24px;letter-spacing:-.01em;margin:0;font-weight:600;text-wrap:balance}
+.pg-h p{margin:2px 0 0;color:var(--muted);max-width:70ch}
+.scn{margin-left:auto;font-family:var(--f-mono);font-size:11px;color:var(--muted);border:1px dashed var(--line);border-radius:4px;padding:2px 7px;white-space:nowrap}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+.card>h2{font-size:15px;margin:0 0 10px;font-weight:600;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;min-width:0}
+.field label{font-size:12px;color:var(--muted);font-weight:500}
+.field.full{grid-column:1/-1}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:6px;padding:8px 14px;cursor:pointer;font-weight:500}
+.btn:hover{filter:brightness(1.08)}
+.btn.sec{background:var(--surface);color:var(--accent);border:1px solid var(--accent)}
+.btn.ghost{background:none;color:var(--muted);border:1px solid var(--line)}
+.btn.bad{background:var(--bad);color:#fff}
+.btn[disabled]{opacity:.45;cursor:not-allowed;filter:none}
+.btn.sm{padding:4px 9px;font-size:12px}
+table{border-collapse:collapse;width:100%}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;font-weight:500;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--surface2)}
+.tw{overflow-x:auto}
+.chip{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:500;background:var(--surface2);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+.chip.info{background:var(--info-soft);color:var(--info);border-color:transparent}
+.chip.good{background:var(--good-soft);color:var(--good);border-color:transparent}
+.chip.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.chip.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.chip.acc{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.tag{display:inline-flex;gap:4px;align-items:center;background:var(--accent-soft);color:var(--accent);border-radius:4px;padding:2px 4px 2px 8px;font-size:12px;margin:0 4px 4px 0}
+.tag button{background:none;border:0;cursor:pointer;color:inherit;padding:0 4px;font-size:14px}
+.mono{font-family:var(--f-mono);font-size:12.5px}
+.muted{color:var(--muted)}
+.note{background:var(--warn-soft);color:var(--warn);border-radius:6px;padding:8px 10px;font-size:12.5px;margin:8px 0}
+.note.ok{background:var(--good-soft);color:var(--good)}
+.note.err{background:var(--bad-soft);color:var(--bad)}
+.note.inf{background:var(--info-soft);color:var(--info)}
+.sugg{position:relative}
+.sugg ul{position:absolute;z-index:5;left:0;right:0;top:100%;margin:2px 0 0;padding:4px;list-style:none;background:var(--surface);border:1px solid var(--line);border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.15);max-height:200px;overflow:auto}
+.sugg li{padding:6px 8px;border-radius:4px;cursor:pointer}
+.sugg li:hover{background:var(--accent-soft)}
+.steps{display:flex;gap:0;overflow-x:auto;padding:4px 0 10px;margin:0;list-style:none}
+.st{flex:1 0 82px;text-align:center;font-size:11px;color:var(--muted);position:relative;padding-top:20px}
+.st::before{content:"";position:absolute;top:6px;left:50%;width:12px;height:12px;border-radius:50%;background:var(--line);transform:translateX(-50%);z-index:1}
+.st::after{content:"";position:absolute;top:11px;left:-50%;width:100%;height:2px;background:var(--line)}
+.st:first-child::after{display:none}
+.st.done{color:var(--ink)} .st.done::before,.st.done::after{background:var(--accent)}
+.st.now{color:var(--accent);font-weight:600} .st.now::before{background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.st.bad{color:var(--bad);font-weight:600} .st.bad::before{background:var(--bad);box-shadow:0 0 0 4px var(--bad-soft)} .st.bad::after{background:var(--accent)}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:4px 12px}
+.kv dt{color:var(--muted);font-size:12.5px} .kv dd{margin:0}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+.slot{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 0;cursor:pointer;text-align:center;font-family:var(--f-mono);font-size:12px}
+.slot.taken{opacity:.35;cursor:not-allowed;text-decoration:line-through}
+.slot.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.map{width:100%;height:auto;background:var(--surface2);border:1px solid var(--line);border-radius:8px}
+.chat{display:flex;flex-direction:column;gap:8px;max-height:340px;overflow:auto;padding:4px}
+.msg{max-width:78%;padding:8px 12px;border-radius:12px}
+.msg.u{align-self:flex-end;background:var(--accent);color:var(--accent-ink)}
+.msg.b{align-self:flex-start;background:var(--surface2);border:1px solid var(--line)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;z-index:50;max-width:90vw}
+.drawer{position:fixed;right:0;top:0;bottom:0;width:340px;max-width:100%;background:var(--surface);border-left:1px solid var(--line);box-shadow:-8px 0 24px rgba(0,0,0,.15);z-index:40;padding:16px;overflow:auto}
+.drawer h3{margin:14px 0 6px;font-size:13px}
+.login{max-width:400px;margin:20px auto}
+.urgent{color:var(--urgent);font-weight:600}
+.qr{width:72px;height:72px;image-rendering:pixelated}
+hr{border:0;border-top:1px solid var(--line);margin:12px 0}
+@media (max-width:820px){
+  #app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr}
+  .tools{flex-wrap:nowrap;overflow-x:auto;width:100%;padding-bottom:2px}
+  .tools .btn{white-space:nowrap;flex:0 0 auto}
+  header.top{grid-column:1}
+  nav.side{display:flex;gap:4px;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:6px}
+  nav.side .who{display:none}
+  nav.side button{width:auto;white-space:nowrap}
+  main{padding:14px 16px 60px}
+  body.dr #app{margin-right:0}
+  .grid2,.grid3{grid-template-columns:minmax(0,1fr)}
+  .kv{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:no-preference){.toast{animation:in .2s ease}@keyframes in{from{opacity:0;transform:translate(-50%,8px)}}
+  /* único momento animado: el estudio avanza de etapa en la línea de tiempo */
+  .st.adv::after{transform-origin:left center;animation:fill .55s ease-out}
+  .st.adv::before{animation:pop .7s .35s ease-out both}
+  @keyframes fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  @keyframes pop{0%{transform:translateX(-50%) scale(.5)}55%{transform:translateX(-50%) scale(1.45)}100%{transform:translateX(-50%) scale(1)}}}
+.skip{position:absolute;left:-999px;top:8px}
+.skip:focus{left:8px;z-index:60;background:var(--accent);color:var(--accent-ink);padding:6px 12px;border-radius:6px}
+tr.click:focus-visible td{background:var(--accent-soft)}
+tr.click:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+body.dr #app{margin-right:360px}
+body.big #app{zoom:1.18}
+.drawer ol{margin:6px 0 0;padding:0;list-style:none}
+.drawer ol li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line)}
+.drawer ol li .n{flex:0 0 22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:600;display:grid;place-items:center}
+.drawer ul.plain{margin:6px 0 0;padding-left:18px}
+.drawer ul.plain li{margin-bottom:6px}
+.hist{margin:0;padding:0;list-style:none}
+.hist li{padding:6px 0;border-bottom:1px solid var(--line)}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Ir al contenido</a>
+<div id="app">
+  <header class="top">
+    <div class="brand">GenLab<small>Plataforma de estudios genéticos</small></div>
+    <label class="sel">Rol <select id="roleSel"></select></label>
+    <label class="sel" id="personaWrap" hidden>Paciente <select id="personaSel"></select></label>
+    <span class="sp"></span>
+    <div class="tools">
+    <button class="btn ghost sm" data-a="tour">Recorrido de la demo</button>
+    <button class="btn ghost sm" data-a="sim">Simulador de actores externos</button>
+    <button class="btn ghost sm" data-a="sup">Supuestos y deseos</button>
+    <button class="btn ghost sm" data-a="big" aria-pressed="false" id="bigBtn" title="Agranda la interfaz para proyectar">Modo proyector</button>
+    <button class="btn ghost sm" data-a="reset">Reiniciar demo</button>
+    </div>
+  </header>
+  <nav class="side" id="side"></nav>
+  <main id="main"></main>
+</div>
+<div id="drawer"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+'use strict';
+/* ---------- datos base ---------- */
+const HOY = new Date('2026-10-08T12:00:00');
+const SNOMED = ['Acroparestesias','Angioqueratomas','Hipohidrosis','Córnea verticilata','Cardiomiopatía hipertrófica','Insuficiencia renal','Hepatoesplenomegalia','Anemia','Trombocitopenia','Dolor óseo','Retraso del crecimiento','Debilidad muscular','Hipotonía','Macroglosia','Disnea','Opacidad corneal','Cefalea','Fatiga','Fiebre','Dolor abdominal'];
+const PATS = {
+  fabry:{n:'Enfermedad de Fabry',gen:['GLA'],card:'Acroparestesias',sec:['Angioqueratomas','Hipohidrosis','Córnea verticilata','Cardiomiopatía hipertrófica','Insuficiencia renal']},
+  gaucher:{n:'Enfermedad de Gaucher',gen:['GBA1'],card:'Hepatoesplenomegalia',sec:['Anemia','Trombocitopenia','Dolor óseo','Retraso del crecimiento']},
+  pompe:{n:'Enfermedad de Pompe',gen:['GAA'],card:'Debilidad muscular',sec:['Hipotonía','Cardiomiopatía hipertrófica','Macroglosia','Disnea']},
+  asmd:{n:'Déficit de esfingomielinasa ácida (ASMD)',gen:['SMPD1'],card:'Hepatoesplenomegalia',sec:['Disnea','Retraso del crecimiento','Trombocitopenia']},
+  mps1:{n:'Mucopolisacaridosis tipo 1',gen:['IDUA'],card:'Opacidad corneal',sec:['Dolor óseo','Macroglosia','Hepatoesplenomegalia','Retraso del crecimiento']}
+};
+const SECUNDARIOS = ['ACTA2','APC','BRCA1','BRCA2','LDLR','MLH1'];
+const GENES_BUSCADOR = ['ACTA2','APC','BRCA1','BRCA2','GAA','GBA1','GLA','IDUA','LDLR','MLH1','MSH2','SMPD1','TP53','RYR1'];
+const VARIANTES = {GLA:[['c.644A>G (p.Asn215Ser)','Patogénica'],['c.937G>T (p.Asp313Tyr)','Benigna'],['c.1277A>T (p.Asp426Val)','VUS']],GBA1:[['c.1226A>G (p.Asn409Ser)','Patogénica'],['c.1448T>C (p.Leu483Pro)','Patogénica'],['c.1093G>A (p.Glu365Lys)','Benigna']],GAA:[['c.-32-13T>G','Patogénica'],['c.2065G>A (p.Glu689Lys)','Patogénica'],['c.1726G>A (p.Gly576Ser)','Benigna']],SMPD1:[['c.1493G>A (p.Arg498His)','Patogénica'],['c.1829_1831del (p.Arg610del)','Patogénica']],IDUA:[['c.1205G>A (p.Trp402Ter)','Patogénica'],['c.208C>T (p.Gln70Ter)','Patogénica']],BRCA1:[['c.68_69del','Patogénica'],['c.4837A>G','Benigna']],BRCA2:[['c.5946del','Patogénica']],APC:[['c.3927_3931del','Patogénica']],ACTA2:[['c.536G>A','VUS']],LDLR:[['c.1646G>A','Patogénica']],MLH1:[['c.350C>T','VUS']],MSH2:[['c.942+3A>T','Patogénica']],TP53:[['c.743G>A','Patogénica']],RYR1:[['c.7300G>A','VUS']]};
+const OS = [['OSDE',80],['Swiss Medical',70],['Galeno',60],['Sancor Salud',65],['IOMA',50]];
+const LABS = [
+  {id:'l1',n:'Laboratorio San Martín (CABA)',x:300,y:150},{id:'l2',n:'Laboratorio Belgrano (La Plata)',x:318,y:172},
+  {id:'l3',n:'Laboratorio Del Plata (Mar del Plata)',x:330,y:215},{id:'l4',n:'Laboratorio Córdoba Centro',x:210,y:130},
+  {id:'l5',n:'Laboratorio Rosario Norte',x:262,y:115},{id:'l6',n:'Laboratorio Mendoza Oeste',x:120,y:135}
+];
+const LAB = id=>LABS.find(l=>l.id===id);
+const ORDEN = ['Creado','Pagado','Turno sacado','Listo para retirar','En camino al laboratorio central','En laboratorio central','En viaje a Corea','En el área de bioinformática','En análisis por un bioinformático','Resultado disponible'];
+const ROLES = {
+  visit:{n:'Sin sesión (acceso)',u:'Visitante',nav:[['login','Ingresar'],['registro','Registrarse'],['dispositivo','Dispositivo nuevo'],['primer','Primer ingreso']]},
+  admin:{n:'Administrador general',u:'Marcela Ibarra',nav:[['usuarios','Usuarios'],['avisos','Avisos']]},
+  gerente:{n:'Gerente médico',u:'Dra. Paula Arrieta',nav:[['patologias','Patologías'],['cupones','Cupones'],['avisos','Avisos']]},
+  medico:{n:'Médico tratante',u:'Dr. Ricardo Molina',nav:[['estudios','Mis pacientes y estudios'],['paciente_nuevo','Nuevo paciente'],['estudio_nuevo','Nuevo estudio'],['mis_cupones','Mis cupones'],['avisos','Avisos']]},
+  paciente:{n:'Paciente',u:'',nav:[['mi_estudio','Mi estudio'],['turno','Sacar turno'],['avisos','Avisos'],['chatbot','Chatbot']]},
+  adm:{n:'Administrativo del laboratorio',u:'Carolina Vera',nav:[['presupuestos','Presupuestos'],['autorizaciones','Autorizaciones'],['estudios','Estudios y muestras'],['lotes','Lotes y envíos'],['crudos','Datos crudos'],['avisos','Avisos']]},
+  trans:{n:'Transportista',u:'Héctor Luna (Buenos Aires)',nav:[['orden','Orden del día'],['avisos','Avisos']]},
+  bio:{n:'Bioinformático',u:'Diego Sánchez',nav:[['tareas','Lista de tareas'],['analisis','Análisis'],['avisos','Avisos']]}
+};
+/* ---------- estado ---------- */
+let S, role='paciente', view='mi_estudio', ctx={f:{}}, drawerOpen=false, drawerMode='sim', uid=100;
+const lastIx={};
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+function seed(){
+  const P={}, ST={}, mk=(id,n,a,nac,dx,extra={})=>{P[id]={id,nombre:n,apellido:a,dni:String(20000000+Math.floor(Math.random()*9999999)),nac,tel:'221 555 01'+id.slice(1).padStart(2,'0'),mail:(n+'.'+a).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z.]/g,'')+'@mail.com',dx,...extra}};
+  mk('p1','Lucía','Fernández','1988-03-14','fabry');mk('p2','Tomás','Gómez','1995-07-22','gaucher');mk('p3','Ana','Paz','1979-11-02','asmd');
+  mk('p4','Bruno','Ledesma','2001-05-30','fabry');mk('p5','Julia','Sosa','1990-01-19','gaucher');mk('p6','Sofía','Ramos','1984-09-08','fabry');
+  mk('p7','Mateo','Benítez','2026-07-02','pompe',{menor:true,padre:'Carla Benítez',padreMail:'carla.benitez@mail.com'});
+  mk('p8','Camila','Torres','1992-12-11','mps1');mk('p9','Martín','Díaz','1975-04-25','gaucher');mk('p10','Elena','Vidal','1969-08-17','fabry');
+  mk('p20','Nicolás','Herrera','1998-02-03','gaucher');
+  const mkS=(id,pid,estado,extra={})=>{const p=PATS[P[pid].dx];ST[id]={id,pid,genes:[...p.gen],sec:false,estado,pompe:false,pres:null,cob:null,cupon:null,turno:null,inasist:0,ml:null,lote:null,crudos:false,variantes:null,hist:[],...extra}};
+  mkS('s1','p1','Creado');
+  mkS('s2','p2','Creado',{pres:{monto:500,emitido:true}});
+  mkS('s3','p3','Creado',{pres:{monto:500,emitido:true},cob:{modo:'os',os:'OSDE',pct:80,aut:'pendiente'}});
+  mkS('s4','p4','Creado',{pres:{monto:500,emitido:true},cob:{modo:'os',os:'IOMA',pct:50,aut:'Rechazado',motivo:'La obra social no cubre estudios de exoma sin autorización previa de la junta médica.'}});
+  mkS('s5','p5','Turno sacado',{pres:{monto:500,emitido:true},cob:{modo:'part'},pagado:true,turno:{lab:'l1',fecha:'Mié 14/10',hora:'10:15'}});
+  mkS('s6','p6','Listo para retirar',{pres:{monto:500,emitido:true},cob:{modo:'part'},pagado:true,turno:{lab:'l2',fecha:'Mar 06/10',hora:'09:30'},ml:4});
+  mkS('s20','p20','Listo para retirar',{pres:{monto:500,emitido:true},cob:{modo:'part'},pagado:true,turno:{lab:'l1',fecha:'Mar 06/10',hora:'11:00'},ml:3});
+  mkS('s7','p7','En el área de bioinformática',{pompe:true,pres:{monto:500,emitido:true},cob:{modo:'part'},pagado:true,crudos:true});
+  mkS('s8','p8','En el área de bioinformática',{pres:{monto:500,emitido:true},cob:{modo:'part'},pagado:true,crudos:true});
+  mkS('s9','p9','En viaje a Corea',{pres:{monto:500,emitido:true},cob:{modo:'part'},pagado:true,lote:'L-013'});
+  mkS('s10','p10','Resultado disponible',{pres:{monto:500,emitido:true},cob:{modo:'part'},pagado:true,crudos:true,variantes:[{g:'GLA',v:'c.644A>G (p.Asn215Ser)',c:'Patogénica'}]});
+  const nombres=['Valeria Núñez','Gabriel Sosa','Rocío Medina','Federico Ibáñez','Paula Castro','Ignacio Rivas','Marina Cabrera','Diego Ponce','Natalia Luna'];
+  const ids=[];
+  nombres.forEach((nm,i)=>{const id='x'+i;const [n,a]=nm.split(' ');mk(id,n,a,'198'+i+'-0'+(i+1)+'-1'+i,'gaucher');mkS('t'+i,id,'En laboratorio central',{pres:{monto:500,emitido:true},cob:{modo:'part'},pagado:true,lote:'L-014',ml:3});ids.push('t'+i)});
+  const cups=[];const mkc=(i,med)=>cups.push({code:'GL-'+(4000+i*37),pct:i<12?20:30,estado:'Vigente',medico:med});
+  for(let i=0;i<10;i++)mkc(i,i<5?'me':null);cups[0].medico='asignado:p2';cups[0].paciente='p2';
+  return {pat:P,st:ST,cups,
+    lotes:[{id:'L-014',est:ids,estado:'Abierto',urgente:false},{id:'L-013',est:['s9'],estado:'Retiro programado',permiso:true,retiro:'Jue 08/10 a las 15:00'}],
+    users:[{n:'Dr. Ricardo Molina',r:'medico',m:'r.molina@mail.com',prov:''},{n:'Carolina Vera',r:'adm',m:'c.vera@genlab.com',prov:''},{n:'Diego Sánchez',r:'bio',m:'d.sanchez@genlab.com',prov:''},{n:'Héctor Luna',r:'trans',m:'h.luna@genlab.com',prov:'Buenos Aires'},{n:'Dra. Paula Arrieta',r:'gerente',m:'p.arrieta@genlab.com',prov:''}],
+    patol:JSON.parse(JSON.stringify(PATS)),
+    avisos:{'p:p2':[{t:'Hoy 09:12',x:'Ya está disponible el presupuesto de tu estudio.',sid:'s2'}],adm:[{t:'Hoy 08:40',x:'Hay 1 estudio nuevo para presupuestar (Lucía Fernández).',sid:'s1'}],bio:[{t:'Ayer 17:20',x:'Llegaron estudios a En el área de bioinformática.',sid:'s7'}],medico:[{t:'Hoy 07:55',x:'El resultado del estudio de Elena Vidal está disponible.',sid:'s10'}]},
+    me:'p2', ministerioDown:false, picked:[], loteN:14, chat:[{b:true,x:'Hola, soy el asistente de GenLab. Te puedo ayudar con dudas generales sobre las patologías lisosomales.'}], asig:{}};
+}
+S=seed();
+/* ---------- utilidades ---------- */
+const $=s=>document.querySelector(s), esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const age=nac=>{const d=new Date(nac+'T12:00:00');return (HOY-d)/(365.25*864e5)};
+const ageMonths=nac=>age(nac)*12;
+const price=n=>500+Math.max(0,n-5)*30;
+const usd=n=>'USD '+n.toLocaleString('es-AR');
+const full=p=>p.nombre+' '+p.apellido;
+const key=()=>role==='paciente'?'p:'+S.me:role;
+function toast(t){const e=$('#toast');e.innerHTML='<div class="toast">'+esc(t)+'</div>';clearTimeout(toast.h);toast.h=setTimeout(()=>e.innerHTML='',2800)}
+function aviso(k,x,sid){(S.avisos[k]=S.avisos[k]||[]).unshift({t:'Ahora',x,sid,nuevo:true})}
+function setEstado(s,e){s.estado=e}
+function chipEstado(s){
+  const e=s.estado;let c='',l=e;
+  if(e==='Creado'){if(s.cob&&s.cob.aut==='Rechazado'){l='Rechazado';c='bad'}else if(s.cob&&s.cob.aut==='Autorizado'){l='Autorizado';c='good'}else if(s.pagado){l='Pagado';c='good'}else if(s.cob&&s.cob.aut==='pendiente'){l='Creado · espera autorización';c='warn'}}
+  else if(e==='Resultado disponible')c='good';else c='info';
+  return '<span class="chip '+c+'">'+l+'</span>'+(s.pompe?' <span class="chip bad">Pompe urgente</span>':'');
+}
+function estadoReal(s){return s.cob&&s.cob.aut==='Rechazado'&&s.estado==='Creado'?'Rechazado':(s.cob&&s.cob.aut==='Autorizado'&&s.estado==='Creado'?'Autorizado':s.estado)}
+const pagadoOAut=s=>s.pagado||(s.cob&&s.cob.aut==='Autorizado');
+function chipsHtml(s){let h=chipEstado(s);return h}
+function corr(dx,sint){if(!dx)return null;const p=S.patol[dx];if(sint.includes(p.card))return {ok:true,w:'síntoma cardinal'};const n=sint.filter(x=>p.sec.includes(x)).length;return n>=2?{ok:true,w:'dos síntomas secundarios'}:{ok:false}}
+function hd(title,sub,scn){return '<div class="pg-h"><div><h1>'+title+'</h1>'+(sub?'<p>'+sub+'</p>':'')+'</div>'+(scn?'<span class="scn">Escenario '+scn+'</span>':'')+'</div>'}
+function fld(name,label,o={}){const t=o.type||'text',v=esc(ctx.f[name]??o.def??'');return '<div class="field '+(o.full?'full':'')+'"><label for="f_'+name+'">'+label+'</label><input id="f_'+name+'" data-f="'+name+'" '+(o.rr?'data-rr="1" ':'')+'type="'+t+'" value="'+v+'" '+(o.ph?'placeholder="'+o.ph+'"':'')+'></div>'}
+function sel(name,label,opts,o={}){const v=ctx.f[name]??o.def??'';return '<div class="field '+(o.full?'full':'')+'"><label for="f_'+name+'">'+label+'</label><select id="f_'+name+'" data-f="'+name+'" '+(o.rr?'data-rr="1"':'')+'>'+(o.empty?'<option value="">'+o.empty+'</option>':'')+opts.map(x=>{const [val,tx]=Array.isArray(x)?x:[x,x];return '<option value="'+esc(val)+'" '+(String(val)===String(v)?'selected':'')+'>'+esc(tx)+'</option>'}).join('')+'</select></div>'}
+function sneed(name,label,list,o={}){const arr=ctx.f[name]=ctx.f[name]||[];return '<div class="field full"><label>'+label+'</label><div id="tg_'+name+'">'+arr.map((x,i)=>'<span class="tag">'+esc(x)+'<button data-a="delTag" data-p="'+name+'|'+i+'" aria-label="Quitar">×</button></span>').join('')+'</div><div class="sugg"><input type="text" id="q_'+name+'" data-sn="'+name+'" autocomplete="off" placeholder="'+(o.ph||'Escribí 3 letras para buscar en SNOMED')+'"><ul id="u_'+name+'" hidden></ul></div></div>'}
+function qr(code){let s=0;for(const c of code)s=(s*31+c.charCodeAt(0))>>>0;let r='';for(let y=0;y<15;y++)for(let x=0;x<15;x++){const e=(x<4&&y<4)||(x>10&&y<4)||(x<4&&y>10);s=(s*1103515245+12345)>>>0;if(e||(s>>16)&1)r+='<rect x="'+x+'" y="'+y+'" width="1" height="1"/>'}return '<svg class="qr" viewBox="0 0 15 15" fill="currentColor" role="img" aria-label="Código QR">'+r+'</svg>'}
+function mapSvg(pins,opt={}){
+  let h='<svg class="map" viewBox="0 0 440 280" role="img" aria-label="Mapa de maqueta"><g stroke="var(--line)" stroke-width="1">';
+  for(let x=0;x<=440;x+=40)h+='<line x1="'+x+'" y1="0" x2="'+x+'" y2="280"/>';for(let y=0;y<=280;y+=40)h+='<line x1="0" y1="'+y+'" x2="440" y2="'+y+'"/>';
+  h+='</g><path d="M0 232 C80 220 120 250 210 238 S360 250 440 232 L440 280 L0 280Z" fill="var(--info-soft)"/>';
+  if(opt.route&&opt.route.length>1)h+='<polyline fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="6 5" points="'+opt.route.map(p=>p.x+','+p.y).join(' ')+'"/>';
+  pins.forEach((p,i)=>{const c=p.on?'var(--accent)':(p.done?'var(--good)':'var(--muted)');h+='<g data-lab="'+(p.id||'')+'" style="cursor:'+(p.id?'pointer':'default')+'"><circle cx="'+p.x+'" cy="'+p.y+'" r="'+(p.on?13:10)+'" fill="'+c+'" stroke="var(--surface)" stroke-width="2"/><text x="'+p.x+'" y="'+(p.y+4)+'" text-anchor="middle" font-size="11" font-weight="600" fill="#fff">'+(p.l||'')+'</text></g>'});
+  if(opt.truck)h+='<g><rect x="'+(opt.truck.x-12)+'" y="'+(opt.truck.y-8)+'" width="24" height="16" rx="3" fill="var(--warn)"/><text x="'+opt.truck.x+'" y="'+(opt.truck.y+4)+'" text-anchor="middle" font-size="10" fill="#fff">CAM</text></g>';
+  return h+'</svg>';
+}
+function stepper(s){
+  const e=s.estado, i=ORDEN.indexOf(e), ex=(s.cob&&s.cob.aut==='Autorizado')&&!s.pagado;
+  const rech=!!(s.cob&&s.cob.aut==='Rechazado'&&e==='Creado');
+  const lab=['Creado','Pagado o autorizado','Turno sacado','Listo para retirar','En camino al laboratorio central','En laboratorio central','En viaje a Corea','En el área de bioinformática','En análisis','Resultado disponible'];
+  const ix=e==='Creado'&&(s.pagado||ex||rech)?1:i;
+  const adv=lastIx[s.id]!==undefined&&ix>lastIx[s.id];lastIx[s.id]=ix;
+  return '<ol class="steps" aria-label="Etapas del estudio">'+lab.map((l,k)=>{
+    const lb=(k===1&&rech)?'Rechazado':l;
+    const c=(k<ix?'done':k===ix?(rech?'bad':'now'):'')+(adv&&k===ix?' adv':'');
+    return '<li class="st '+c+'"'+(k===ix?' aria-current="step"':'')+'>'+lb+'</li>'}).join('')+'</ol>';
+}
+/* ---------- lotes ---------- */
+function lotAbierto(){let l=S.lotes.find(x=>x.estado==='Abierto');if(!l){S.loteN++;l={id:'L-0'+S.loteN,est:[],estado:'Abierto',urgente:false};S.lotes.push(l)}return l}
+function cerrarLote(l,urg){l.urgente=!!urg;l.csv=true;if(S.ministerioDown){l.estado='Sin permiso'}else{l.estado='Con permiso';l.permiso=true}}
+function sumarALote(st){const l=lotAbierto();l.est.push(st.id);st.lote=l.id;if(st.pompe){cerrarLote(l,true);aviso('adm','Pompe urgente: se cerró el lote '+l.id+' con '+l.est.length+' estudios y se solicitó el permiso.',st.id)}else if(l.est.length>=10){cerrarLote(l,false);aviso('adm','El lote '+l.id+' llegó a 10 estudios. Se solicitó el permiso del Ministerio de Salud.')}}
+/* ---------- vistas ---------- */
+const V={};
+V.visit_login=()=>hd('Ingresar','Acceso con mail y contraseña. Si el dispositivo o la red son nuevos, se pide un código enviado por mail.','4')+
+ '<div class="card login"><h2>Ingresá a tu cuenta</h2>'+fld('lmail','Mail',{def:'tomas.gomez@mail.com'})+
+ '<div class="field"><label for="f_lpass">Contraseña</label><input id="f_lpass" data-f="lpass" type="password" value="••••••••"></div>'+
+ '<div class="row"><button class="btn" data-a="login">Ingresar</button><button class="btn sec" data-a="go" data-p="visit|registro">Registrarme</button></div>'+
+ '<p class="muted" style="font-size:12px;margin-top:12px">¿Olvidaste tu contraseña? Pedí a un administrador que la restablezca.</p></div>';
+V.visit_dispositivo=()=>{const n=ctx.intentos||0;return hd('Verificación de dispositivo nuevo','Detectamos un dispositivo o una red que no usaste antes. Te enviamos un código de 6 dígitos a tu mail.','4')+
+ '<div class="card login"><h2>Ingresá el código</h2><p class="muted">Enviamos el código a <b>'+esc(ctx.f.lmail||'tomas.gomez@mail.com')+'</b>. Vence en 10 minutos.</p>'+
+ fld('code','Código de verificación',{ph:'123456'})+(n?'<div class="note err">Código incorrecto. Intentos restantes: '+(5-n)+'.</div>':'')+(n>=5?'<div class="note err">La cuenta quedó bloqueada por 5 intentos fallidos.</div>':'')+
+ '<div class="row"><button class="btn" data-a="verify" '+(n>=5?'disabled':'')+'>Verificar</button><button class="btn ghost" data-a="toast" data-p="Código reenviado al mail">Reenviar código</button></div><p class="muted" style="font-size:12px">En esta demo el código válido es 123456.</p></div>'};
+V.visit_registro=()=>{const r=ctx.f.rrol||'medico';return hd('Registrarse','Autoalta de médicos tratantes, administrativos del laboratorio y bioinformáticos.','1 y 2')+
+ '<div class="card" style="max-width:640px"><h2>Crear cuenta</h2><div class="grid2">'+sel('rrol','Rol',[['medico','Médico tratante'],['adm','Administrativo del laboratorio'],['bio','Bioinformático']],{rr:1})+fld('rnom','Nombre')+fld('rape','Apellido')+fld('rtel','Teléfono de contacto')+fld('rmail','Mail',{full:1})+
+ (r==='medico'?fld('rmat','Matrícula')+sneed2('resp','Especialidades (catálogo estandarizado)'):'')+
+ '<div class="field"><label for="f_rpw">Contraseña</label><input id="f_rpw" data-f="rpw" type="password"></div></div>'+
+ (r==='medico'?'<div class="note inf">La matrícula no se valida contra ningún servicio externo.</div>':'')+
+ '<button class="btn" data-a="registrar">Confirmar registro</button></div>'};
+function sneed2(name,label){const L=['Genética médica','Pediatría','Clínica médica','Cardiología','Nefrología','Hematología','Neurología'];const arr=ctx.f[name]=ctx.f[name]||[];return '<div class="field full"><label>'+label+'</label><div>'+arr.map((x,i)=>'<span class="tag">'+x+'<button data-a="delTag" data-p="'+name+'|'+i+'">×</button></span>').join('')+'</div><select data-a-change="addEsp"><option value="">Buscar y agregar especialidad…</option>'+L.map(x=>'<option>'+x+'</option>').join('')+'</select></div>'}
+V.visit_primer=()=>hd('Primer ingreso del paciente','El paciente recibió sus credenciales por mail y debe cambiar la contraseña inicial antes de ver cualquier otra pantalla.','3')+
+ '<div class="card login"><h2>Definí tu contraseña</h2><div class="note inf">Si el paciente es menor de edad, este paso lo completa su padre o madre.</div><div class="field"><label for="f_n1">Nueva contraseña</label><input id="f_n1" data-f="n1" type="password"></div><div class="field"><label for="f_n2">Repetí la contraseña</label><input id="f_n2" data-f="n2" type="password"></div><button class="btn" data-a="cambiarPw">Guardar contraseña</button></div>';
+V.admin_usuarios=()=>{const r=ctx.f.urol||'medico';return hd('Usuarios','Alta de usuarios de cualquier rol, excepto pacientes. Es una alternativa a la autoalta.','2')+
+ '<div class="grid2"><div class="card"><h2>Nuevo usuario</h2><div class="grid2">'+sel('urol','Rol',[['medico','Médico tratante'],['adm','Administrativo del laboratorio'],['bio','Bioinformático'],['trans','Transportista'],['gerente','Gerente médico']],{rr:1})+fld('unom','Nombre y apellido')+fld('umail','Mail')+fld('utel','Teléfono')+
+ (r==='trans'?sel('uprov','Provincia que cubre',['Buenos Aires','Córdoba','Santa Fe','Mendoza','Tucumán'],{full:1}):'')+'</div><button class="btn" data-a="altaUsuario">Dar de alta</button><p class="muted" style="font-size:12px">El sistema envía las credenciales de acceso al mail del nuevo usuario.</p></div>'+
+ '<div class="card"><h2>Listado de usuarios</h2><div class="tw"><table><tr><th>Nombre</th><th>Rol</th><th>Mail</th></tr>'+S.users.map(u=>'<tr><td>'+esc(u.n)+'</td><td>'+ROLES[u.r].n+(u.prov?' <span class="chip">'+u.prov+'</span>':'')+'</td><td class="mono">'+esc(u.m)+'</td></tr>').join('')+'</table></div></div></div>'};
+V.gerente_patologias=()=>{const ed=ctx.edit;const rows=Object.entries(S.patol).map(([k,p])=>'<tr class="click" data-a="editPat" data-p="'+k+'"><td>'+p.n+'</td><td>'+p.card+'</td><td>'+p.sec.length+'</td><td class="mono">'+p.gen.join(', ')+'</td></tr>').join('');
+ let form='';
+ if(ed){form='<div class="card"><h2>'+(ed==='nueva'?'Nueva patología lisosomal':'Modificar síntomas')+'</h2>'+(ed==='nueva'?fld('pn','Nombre de la patología',{full:1}):'<p><b>'+esc(S.patol[ed].n)+'</b></p>')+
+  '<div class="field"><label>Síntoma cardinal</label><div>'+(ctx.f.pcard?'<span class="tag">'+esc(ctx.f.pcard)+'<button data-a="delCard">×</button></span>':'<span class="muted">Sin definir</span>')+'</div></div>'+sneedCard()+sneed('psec','Síntomas secundarios')+
+  '<div class="row"><button class="btn" data-a="guardarPat">Guardar</button><button class="btn ghost" data-a="cancelPat">Cancelar</button></div></div>'}
+ return hd('Patologías lisosomales','El gerente médico define cada patología con su síntoma cardinal y sus síntomas secundarios. Con ellos el sistema aplica la regla de correspondencia clínica.','6 y 7')+
+ '<div class="grid2" style="align-items:start"><div class="card"><h2>Patologías <button class="btn sm" style="margin-left:auto" data-a="nuevaPat">Nueva patología</button></h2><div class="tw"><table><tr><th>Patología</th><th>Síntoma cardinal</th><th>Secundarios</th><th>Genes</th></tr>'+rows+'</table></div><p class="muted" style="font-size:12px">Tocá una fila para modificar sus síntomas.</p></div>'+(form||'<div class="card muted">Elegí una patología del listado o creá una nueva.</div>')+'</div>'};
+function sneedCard(){return '<div class="field full"><div class="sugg"><input type="text" id="q_pcardin" data-sn="pcardin" autocomplete="off" placeholder="Buscar síntoma cardinal en SNOMED"><ul id="u_pcardin" hidden></ul></div></div>'}
+V.gerente_cupones=()=>{const sinAsig=S.cups.filter(c=>!c.medico&&c.estado==='Vigente');const med=S.users.filter(u=>u.r==='medico');
+ return hd('Cupones de descuento','Generá cupones con un descuento y asignalos a los médicos tratantes.','15 y 16')+
+ '<div class="grid2" style="align-items:start"><div class="card"><h2>Generar cupones</h2><div class="grid2">'+fld('cpct','Descuento (%)',{type:'number',def:'20'})+fld('ccant','Cantidad',{type:'number',def:'5'})+'</div><button class="btn" data-a="genCupones">Generar cupones</button>'+
+ '<hr><h2>Asignar al médico tratante</h2>'+sel('cmed','Médico tratante',med.map(m=>m.n),{empty:'Elegí un médico'})+'<p class="muted" style="font-size:12px">Seleccioná cupones en el listado y presioná Asignar.</p><button class="btn sec" data-a="asigCupones">Asignar cupones seleccionados</button></div>'+
+ '<div class="card"><h2>Listado de cupones</h2><div class="tw"><table><tr><th></th><th>Código</th><th>Descuento</th><th>Estado</th><th>Asignado a</th><th>QR</th></tr>'+S.cups.map(c=>'<tr><td>'+(!c.medico&&c.estado==='Vigente'?'<input type="checkbox" data-chk="'+c.code+'" '+((ctx.sel||[]).includes(c.code)?'checked':'')+'>':'')+'</td><td class="mono">'+c.code+'</td><td>'+c.pct+'%</td><td><span class="chip '+(c.estado==='Vigente'?'good':'')+'">'+c.estado+'</span></td><td>'+(c.medico?(c.medico==='me'?'Dr. Ricardo Molina':c.medico.startsWith('asignado:')?'Paciente '+full(S.pat[c.paciente]):c.medico):'<span class="muted">Sin asignar</span>')+'</td><td>'+qr(c.code)+'</td></tr>').join('')+'</table></div></div></div>'};
+/* médico */
+V.medico_estudios=()=>{const rows=Object.values(S.st).filter(s=>!s.id.startsWith('t')).map(s=>{const p=S.pat[s.pid];return '<tr class="click" data-a="det" data-p="'+s.id+'"><td><b>'+esc(full(p))+'</b><div class="muted" style="font-size:12px">DNI '+p.dni+'</div></td><td>'+PATS[p.dx].n+'</td><td>'+chipEstado(s)+'</td></tr>'}).join('');
+ return hd('Mis pacientes y estudios','Seguimiento de los estudios que derivaste y acceso a sus resultados.','37')+'<div class="card"><div class="tw"><table><tr><th>Paciente</th><th>Presunción diagnóstica</th><th>Estado</th></tr>'+rows+'</table></div></div>'};
+V.det=()=>{const s=S.st[ctx.sid],p=S.pat[s.pid];const who=role;let ex='';
+ const v=s.variantes;
+ if(s.estado==='Resultado disponible'&&(who==='medico')){
+  const pos=v&&v.some(x=>x.v!=='Sin variantes');
+  ex='<div class="card"><h2>Resultado del estudio '+(pos?'<span class="chip bad">Positivo</span>':'<span class="chip good">Negativo</span>')+'</h2><div class="tw"><table><tr><th>Gen</th><th>Variante genética</th><th>Clasificación</th></tr>'+(v||[]).map(x=>'<tr><td class="mono">'+x.g+'</td><td class="mono">'+x.v+'</td><td><span class="chip '+(x.c==='Patogénica'?'bad':x.c==='VUS'?'warn':'good')+'">'+x.c+'</span></td></tr>').join('')+'</table></div><div class="row" style="margin-top:10px"><button class="btn" data-a="toast" data-p="Descarga simulada: resultado.pdf">Descargar resultado (PDF)</button>'+'<button class="btn sec" data-a="reanalisis" data-p="'+s.id+'">Solicitar reanálisis</button>'+'</div></div>'}
+ if(ctx.rean===s.id){ex+=reanForm(s,p)}
+ const back=who==='adm'?'estudios':'estudios';
+ let extra='';
+ if(who==='adm'){extra=adminActions(s)}
+ return hd(esc(full(p)),PATS[p.dx].n+(p.menor?' (paciente menor de edad)':''),who==='adm'?'25 y 33':'37 y 39')+'<div class="card">'+stepper(s)+'<dl class="kv"><dt>Estado</dt><dd>'+chipEstado(s)+'</dd><dt>Genes a analizar</dt><dd class="mono">'+s.genes.join(', ')+'</dd><dt>Presupuesto</dt><dd>'+(s.pres?usd(s.pres.monto):'<span class="muted">Sin emitir</span>')+'</dd>'+(s.turno?'<dt>Turno de extracción</dt><dd>'+s.turno.fecha+' '+s.turno.hora+' · '+LAB(s.turno.lab).n+'</dd>':'')+(s.lote?'<dt>Lote</dt><dd>'+s.lote+'</dd>':'')+'</dl><div class="row" style="margin-top:12px"><button class="btn ghost sm" data-a="go" data-p="'+role+'|'+back+'">Volver al listado</button></div></div>'+extra+ex+histCard(s)};
+function histCard(s){return s.hist&&s.hist.length?'<div class="card"><h2>Historial del estudio</h2><ul class="hist">'+s.hist.map(h=>'<li><b>'+esc(h.t)+'</b> · '+esc(h.x)+'</li>').join('')+'</ul></div>':''}
+function reanForm(s,p){const opts=Object.entries(S.patol).filter(([k])=>k!==p.dx).map(([k,x])=>[k,x.n]);const k=ctx.f.rdx;const nuevos=k?S.patol[k].gen.filter(g=>!s.genes.includes(g)):[];
+ return '<div class="card"><h2>Solicitar reanálisis</h2><p class="muted">Se reutilizan los datos crudos guardados. No hace falta una nueva extracción.</p>'+sel('rdx','Nuevo diagnóstico presuntivo',opts,{empty:'Elegí una patología',rr:1})+(k?'<p>Genes que todavía no se analizaron: <b class="mono">'+nuevos.join(', ')+'</b></p>':'')+'<button class="btn" data-a="confirmarRean" data-p="'+s.id+'" '+(k?'':'disabled')+'>Confirmar solicitud</button></div>'}
+function adminActions(s){
+  let h='<div class="grid2">';
+  if(s.estado==='En camino al laboratorio central'){const tr=LAB(s.turno?.lab||'l2');h+='<div class="card"><h2>Seguimiento de la muestra</h2><p>Estado <b>En camino al laboratorio central</b>. Transportista asignado: <b>Héctor Luna</b>.</p><button class="btn sec" data-a="verMapa">Ver en mapa</button>'+(ctx.mapa?'<div style="margin-top:10px">'+mapSvg(LABS.map((l,i)=>({x:l.x,y:l.y,l:i+1,on:l.id===tr.id})),{truck:{x:(tr.x+300)/2+6,y:(tr.y+150)/2+8}})+'<p class="muted" style="font-size:12px">Ubicación actual del transportista y paradas pendientes de su orden del día.</p></div>':'')+'</div>'}
+  else if(s.estado==='Listo para retirar'||s.estado==='Turno sacado'){h+='<div class="card"><h2>Seguimiento de la muestra</h2><p>La muestra todavía no fue retirada.'+(s.turno?' Espera en <b>'+LAB(s.turno.lab).n+'</b>.':'')+'</p></div>'}
+  if(['Turno sacado','Listo para retirar','En laboratorio central'].includes(s.estado)){
+    h+='<div class="card"><h2>Remuestreo</h2><p class="muted">Se usa cuando la muestra tiene menos de 2 ml o el ADN se desnaturalizó. El paciente no paga de nuevo y el estudio conserva su historial.</p>'+sel('rmot','Motivo',['Volumen insuficiente','ADN desnaturalizado'],{})+'<button class="btn bad" data-a="remuestreo" data-p="'+s.id+'">Solicitar remuestreo</button></div>'}
+  return h+'</div>'}
+V.medico_paciente_nuevo=()=>{
+ const sint=ctx.f.sint=ctx.f.sint||[],dx=ctx.f.dx,c=corr(dx,sint),menor=ctx.f.nac&&age(ctx.f.nac)<18,pompeU=dx==='pompe'&&ctx.f.nac&&ageMonths(ctx.f.nac)<4;
+ if(ctx.creado){const p=S.pat[ctx.creado];return hd('Paciente dado de alta','','7')+'<div class="card"><div class="note ok">Alta confirmada para <b>'+esc(full(p))+'</b>. El sistema envió las credenciales de acceso al mail '+(p.menor?'del padre o la madre ('+esc(p.padreMail)+')':esc(p.mail))+'.</div>'+(p.pompeU?'<div class="note err">Pompe en menor de 4 meses: el estudio se marcará como <b>Pompe urgente</b>.</div>':'')+'<div class="row"><button class="btn" data-a="aEstudio" data-p="'+p.id+'">Dar de alta el estudio</button><button class="btn ghost" data-a="otroPaciente">Cargar otro paciente</button></div></div>'}
+ const fam=ctx.f.fam=ctx.f.fam||[];
+ return hd('Nuevo paciente','El médico tratante registra al paciente durante la consulta. El familiograma es el único dato que puede quedar vacío.','7, 8 y 9')+
+ '<div class="grid2" style="align-items:start"><div class="card"><h2>Datos del paciente</h2><div class="grid2">'+fld('dni','DNI')+fld('nombre','Nombre')+fld('apellido','Apellido')+fld('nac','Fecha de nacimiento',{type:'date',rr:1})+fld('tel','Teléfono de contacto')+fld('mail','Mail')+'</div>'+
+ (menor?'<div class="note inf">Es menor de edad. Cargá los datos del padre o la madre: recibirá las credenciales y firmará el consentimiento informado.</div><div class="grid2">'+fld('padre','Nombre del padre o la madre')+fld('padreMail','Mail del padre o la madre')+'</div>':'')+
+ (pompeU?'<div class="note err">Pompe en menor de 4 meses: el estudio se marcará como Pompe urgente.</div>':'')+'</div>'+
+ '<div class="card"><h2>Información clínica</h2>'+sel('dx','Diagnóstico presuntivo',Object.entries(S.patol).map(([k,p])=>[k,p.n]),{empty:'Elegí una patología lisosomal',rr:1,full:1})+
+ '<div class="field"><label>Tipo de sospecha</label><div class="row"><label><input type="radio" name="sosp" data-f="sosp" value="clínica" '+(ctx.f.sosp==='clínica'?'checked':'')+'> Sospecha clínica</label><label><input type="radio" name="sosp" data-f="sosp" value="familiar" '+(ctx.f.sosp==='familiar'?'checked':'')+'> Sospecha familiar</label></div></div>'+
+ '<div class="field"><label for="f_hc">Resumen de historia clínica <span class="chip warn">deseo</span></label><textarea id="f_hc" data-f="hc" rows="3">'+esc(ctx.f.hc||'')+'</textarea><div class="row" style="margin-top:6px"><button class="btn sec sm" data-a="dictar">🎙 Dictar resumen</button><span class="muted" style="font-size:12px">Dictado por voz, sujeto a factibilidad.</span></div></div>'+
+ sneed('sint','Síntomas del paciente (SNOMED)')+
+ (dx?'<div class="note '+(c.ok?'ok':'err')+'">'+(c.ok?'Se cumple la regla de correspondencia clínica ('+c.w+').':'No se cumple la regla de correspondencia clínica: hace falta el síntoma cardinal ('+S.patol[dx].card+') o dos síntomas secundarios.')+'</div>':'')+'</div></div>'+
+ '<div class="card"><h2>Familiograma <span class="muted" style="font-weight:400">(opcional)</span></h2>'+fam.map((f,i)=>'<div class="row" style="margin-bottom:6px"><span class="chip acc">'+esc(f.par)+'</span><b>'+esc(f.nom)+'</b><span class="muted">'+(f.sint.length?f.sint.join(', '):'sin síntomas')+'</span><button class="btn ghost sm" data-a="delFam" data-p="'+i+'">Quitar</button></div>').join('')+
+ '<div class="row" style="align-items:flex-end"><div style="flex:1">'+sel('fpar','Parentesco',['Madre','Padre','Hermano/a','Hijo/a','Abuelo/a','Tío/a'],{})+'</div><div style="flex:2">'+fld('fnom','Nombre del familiar')+'</div></div>'+sneed('fsint','Síntomas del familiar (SNOMED)')+
+ '<div class="row"><button class="btn sec" data-a="addFam">Agregar familiar</button><button class="btn sec" data-a="genFam" '+(fam.length?'':'disabled')+'>Generar familiograma</button>'+(ctx.famPdf?'<span class="chip good">familiograma.pdf asociado al paciente</span>':'')+'</div></div>'+
+ '<button class="btn" data-a="altaPaciente">Confirmar alta del paciente</button>'};
+V.medico_estudio_nuevo=()=>{
+ const pid=ctx.f.sp;const p=pid&&S.pat[pid];
+ if(ctx.estCreado){return hd('Estudio solicitado','','10')+'<div class="card"><div class="note ok">El estudio quedó en estado <b>Creado</b> y está disponible para el administrativo del laboratorio, que emitirá el presupuesto.</div><button class="btn" data-a="go" data-p="medico|estudios">Ver mis estudios</button></div>'}
+ let body='';
+ if(p){const base=PATS[p.dx].gen;const sec=ctx.f.hsec?SECUNDARIOS:[];const extra=ctx.f.gextra=ctx.f.gextra||[];const all=[...new Set([...base,...sec,...extra])];
+  body='<div class="card"><h2>Genes a analizar</h2><p class="muted">El sistema consulta la Bioinformática API y trae la lista de genes del diagnóstico presuntivo: <b>'+PATS[p.dx].n+'</b>.</p><div style="margin:6px 0">'+all.map(g=>'<span class="tag mono">'+g+(extra.includes(g)?'<button data-a="delGen" data-p="'+g+'">×</button>':'')+'</span>').join('')+'</div>'+
+  '<label class="row" style="margin:8px 0"><input type="checkbox" data-chk2="hsec" '+(ctx.f.hsec?'checked':'')+'> Incluir hallazgos secundarios (suma '+SECUNDARIOS.length+' genes)</label>'+
+  '<div class="field"><label for="f_gadd">Agregar un gen</label><div class="row"><select id="f_gadd" data-f="gadd"><option value="">Elegí un gen…</option>'+GENES_BUSCADOR.filter(g=>!all.includes(g)).map(g=>'<option>'+g+'</option>').join('')+'</select><button class="btn sec sm" data-a="addGen">Agregar</button></div></div>'+
+  '<p>Importe estimado: <b>'+usd(price(all.length))+'</b> <span class="muted">(USD 500 hasta 5 genes, más USD 30 por cada gen adicional)</span></p><button class="btn" data-a="altaEstudio" data-p="'+all.join(',')+'">Confirmar solicitud del estudio</button></div>'}
+ return hd('Nuevo estudio','Solicitud del estudio de un paciente existente, con la lista de genes a analizar.','10')+'<div class="card" style="max-width:520px"><h2>Paciente</h2>'+sel('sp','Paciente',Object.values(S.pat).filter(x=>!x.id.startsWith('x')).map(x=>[x.id,full(x)+' (DNI '+x.dni+')']),{empty:'Buscá o elegí un paciente',rr:1})+'</div>'+body};
+V.medico_mis_cupones=()=>{const mis=S.cups.filter(c=>c.medico==='me'&&c.estado==='Vigente');
+ return hd('Mis cupones','Cupones de descuento asignados por el gerente médico, en cantidad limitada. Entregalos al paciente que elijas.','17')+
+ '<div class="grid2" style="align-items:start"><div class="card"><h2>Disponibles <span class="chip acc">'+mis.length+'</span></h2><div class="tw"><table><tr><th></th><th>Código</th><th>Descuento</th></tr>'+mis.map(c=>'<tr><td><input type="radio" name="cp" data-f="cup" value="'+c.code+'" '+(ctx.f.cup===c.code?'checked':'')+'></td><td class="mono">'+c.code+'</td><td>'+c.pct+'%</td></tr>').join('')+'</table></div>'+(mis.length?'':'<p class="muted">No tenés cupones disponibles.</p>')+'</div>'+
+ '<div class="card"><h2>Asignar a un paciente</h2>'+sel('cpac','Paciente',Object.values(S.pat).filter(x=>!x.id.startsWith('x')).map(x=>[x.id,full(x)]),{empty:'Buscá un paciente'})+'<button class="btn" data-a="asigPac" '+(mis.length?'':'disabled')+'>Asignar a paciente</button><p class="muted" style="font-size:12px">El sistema descuenta el cupón de tu saldo y lo publica en la vista del paciente.</p></div></div>'};
+/* paciente */
+V.paciente_mi_estudio=()=>{const p=S.pat[S.me];const s=Object.values(S.st).find(x=>x.pid===p.id);const e=estadoReal(s);let act='';
+ const pres=s.pres;
+ if(!pres)act='<div class="note inf">Tu estudio está esperando el presupuesto. Te avisaremos cuando esté disponible.</div>';
+ else if(s.estado==='Creado'&&!s.cob){const md=ctx.f.modo;act='<h2>Presupuesto</h2><p style="font-size:20px;margin:4px 0"><b>'+usd(pres.monto)+'</b></p><div class="row"><button class="btn '+(md==='os'?'':'sec')+'" data-a="modo" data-p="os">Obra social</button><button class="btn '+(md==='part'?'':'sec')+'" data-a="modo" data-p="part">Pago particular</button></div>'+(md==='os'?cobOS(s):md==='part'?cobPart(s):'');}
+ else if(s.cob&&s.cob.aut==='pendiente')act='<div class="note inf">Tu obra social ('+s.cob.os+') cubre el '+s.cob.pct+'%. El estudio espera la autorización de la obra social. Te avisaremos cuando haya respuesta.</div>';
+ else if(e==='Rechazado')act='<div class="note err"><b>Rechazado.</b> '+esc(s.cob.motivo)+'</div><h2>Solicitar reautorización con una demanda</h2><p class="muted">Si obtuviste un fallo favorable, subí la decisión judicial en PDF.</p>'+fld('pdfname','Archivo PDF de la demanda',{def:'demanda_fallo.pdf'})+'<button class="btn" data-a="reaut">Solicitar reautorización</button>';
+ else if((e==='Autorizado'||e==='Pagado'||s.rem)&&s.estado==='Creado'||(s.estado==='Creado'&&pagadoOAut(s)))act='<div class="note ok">'+(s.pagado?'Pago confirmado.':'Tu obra social autorizó el estudio.')+' Ya podés sacar turno de extracción.</div><button class="btn" data-a="go" data-p="paciente|turno">Sacar turno</button>';
+ else if(s.estado==='Turno sacado'){const t=s.turno;act='<h2>Tu turno de extracción</h2><dl class="kv"><dt>Laboratorio</dt><dd>'+LAB(t.lab).n+'</dd><dt>Fecha y hora</dt><dd>'+t.fecha+', '+t.hora+'</dd><dt>Preparación</dt><dd>No requiere preparación especial</dd></dl>'+
+  (s.inasist?'<div class="note err">Registramos '+s.inasist+' inasistencia'+(s.inasist>1?'s':'')+' (el límite es 5).</div>':'')+
+  '<div class="row" style="margin-top:10px"><button class="btn" data-a="toast" data-p="Descarga simulada: orden_de_extraccion.pdf">Descargar orden de extracción</button><button class="btn sec" data-a="toast" data-p="Descarga simulada: consentimiento_informado.pdf">Descargar consentimiento informado</button></div><div class="note inf" style="margin-top:10px">Imprimí el consentimiento, completalo y firmalo'+(p.menor?' (lo firma tu padre o madre)':'')+'. Entregalo en el laboratorio de extracción el día del turno. El documento firmado no se sube al sistema.</div>'+
+  '<div class="row"><button class="btn ghost" data-a="go" data-p="paciente|turno">'+(s.inasist?'Reprogramar turno':'Elegir otro turno')+'</button><button class="btn bad" data-a="pedirCancel">Cancelar turno</button></div>'+(ctx.cancel?'<div class="note err">¿Cancelar el turno? Es sin costo ni penalidad. <button class="btn bad sm" data-a="cancelTurno">Sí, cancelar</button> <button class="btn ghost sm" data-a="noCancel">No</button></div>':'');}
+ else if(s.estado==='Resultado disponible')act='<div class="note ok">Tu resultado está disponible. El PDF se descarga desde la plataforma, no se envía por mail.</div><button class="btn" data-a="toast" data-p="Descarga simulada: resultado_estudio.pdf">Descargar resultado</button>';
+ else act='<div class="note inf">Tu estudio está en <b>'+s.estado+'</b>. No necesitás hacer nada por ahora.</div>';
+ return hd('Mi estudio','Seguimiento del estudio en cada etapa, desde el presupuesto hasta el resultado.','12, 13, 20, 21, 36, 37')+'<div class="card"><div class="row"><b style="font-size:16px">'+esc(full(p))+'</b>'+chipEstado(s)+(s.cupon?'<span class="chip acc">Cupón '+s.cupon+'</span>':'')+'</div>'+stepper(s)+'</div><div class="card">'+act+'</div>'};
+function cobOS(s){const os=ctx.f.os,o=OS.find(x=>x[0]===os);return '<hr>'+sel('os','Obra social',OS.map(x=>x[0]),{empty:'Elegí tu obra social',rr:1})+(o?'<p>Cobertura <b>'+o[1]+'%</b> · importe a cargo de la obra social: <b>'+usd(s.pres.monto*o[1]/100)+'</b></p><button class="btn" data-a="confirmOS">Confirmar cobertura</button>':'')+'<p class="muted" style="font-size:12px">Si tu obra social no figura en la lista, solo podés elegir el pago particular.</p>'}
+function cobPart(s){const c=S.cups.find(x=>x.code===(ctx.f.cupAp||''));const pct=ctx.cupOk?ctx.cupOk.pct:0;const monto=s.pres.monto*(1-pct/100);
+ return '<hr>'+(S.cups.filter(x=>x.paciente===S.me&&x.estado==='Vigente').map(x=>'<div class="note ok">Tu médico te asignó el cupón <b class="mono">'+x.code+'</b> ('+x.pct+'%). <button class="btn sm sec" data-a="usarCup" data-p="'+x.code+'">Usar cupón</button></div>').join(''))+'<div class="row"><b>Importe a pagar:</b><span style="font-size:20px"><b>'+usd(monto)+'</b></span>'+(pct?'<span class="chip good">Cupón '+pct+'% aplicado</span>':'')+'</div><div class="field" style="margin-top:10px"><label for="f_cupAp">Código del cupón (figura en el PDF con QR)</label><div class="row"><input type="text" id="f_cupAp" data-f="cupAp" value="'+esc(ctx.f.cupAp||'')+'" placeholder="GL-4000"><button class="btn sec sm" data-a="aplicarCupon">Aplicar cupón</button></div></div>'+(ctx.cupErr?'<div class="note err">'+ctx.cupErr+'</div>':'')+'<button class="btn" data-a="pagar">Pagar</button><p class="muted" style="font-size:12px">Pago simulado: no se procesa ninguna tarjeta real.</p>'}
+V.paciente_turno=()=>{const p=S.pat[S.me];const s=Object.values(S.st).find(x=>x.pid===p.id);
+ const puede=(pagadoOAut(s)&&s.estado==='Creado')||s.estado==='Turno sacado';
+ if(s.inasist>=5)return hd('Reprogramar turno','','23')+'<div class="card"><div class="note err">Llegaste a 5 inasistencias y el sistema bloqueó la reprogramación. Pendiente a definir con el PO: qué pasa con el pago y con el estudio.</div></div>';
+ if(!puede)return hd('Sacar turno','','20')+'<div class="card"><div class="note">El botón "Sacar turno" se habilita cuando el estudio está pagado o autorizado.</div></div>';
+ const lab=ctx.f.lab?LAB(ctx.f.lab):null;const dias=['Vie 09/10','Mar 13/10','Mié 14/10','Jue 15/10','Vie 16/10'];const dia=ctx.f.dia||dias[1];
+ const slots=[];for(let m=9*60;m<18*60;m+=15)slots.push(('0'+Math.floor(m/60)).slice(-2)+':'+('0'+m%60).slice(-2));
+ const taken=h=>(h.charCodeAt(1)+h.charCodeAt(3)+dia.charCodeAt(5)+(lab?lab.id.charCodeAt(1):0))%4===0;
+ return hd(s.estado==='Turno sacado'?'Reprogramar turno':'Sacar turno','Elegí el laboratorio de extracción más cercano entre los 100 del país y reservá un turno de 15 minutos.','20 y 23')+
+ '<div class="grid2" style="align-items:start"><div class="card"><h2>Laboratorios de extracción</h2>'+mapSvg(LABS.map((l,i)=>({id:l.id,x:l.x,y:l.y,l:i+1,on:lab&&lab.id===l.id})))+'<div style="margin-top:8px">'+LABS.map((l,i)=>'<div><button class="btn ghost sm" style="margin:2px 0;width:100%;text-align:left;'+(lab&&lab.id===l.id?'border-color:var(--accent);color:var(--accent)':'')+'" data-a="pickLab" data-p="'+l.id+'">'+(i+1)+'. '+l.n+'</button></div>').join('')+'</div><p class="muted" style="font-size:12px">Maqueta: se muestran 6 de los 100 laboratorios.</p></div>'+
+ '<div class="card"><h2>Turnos disponibles'+(lab?' · '+lab.n:'')+'</h2>'+(lab?'<div class="row" style="margin-bottom:8px">'+dias.map(d=>'<button class="btn sm '+(d===dia?'':'ghost')+'" data-a="pickDia" data-p="'+d+'">'+d+'</button>').join('')+'</div><p class="muted" style="font-size:12px">Lunes a viernes, de 9 a 18, sin feriados (el lunes 12/10 es feriado).</p><div class="slots">'+slots.map(h=>'<button class="slot '+(taken(h)?'taken':'')+' '+(ctx.f.hora===h?'on':'')+'" '+(taken(h)?'disabled':'')+' data-a="pickHora" data-p="'+h+'">'+h+'</button>').join('')+'</div><div style="margin-top:12px"><button class="btn" data-a="reservar" '+(ctx.f.hora?'':'disabled')+'>Confirmar reserva</button></div>':'<p class="muted">Elegí un laboratorio en el mapa o en la lista.</p>')+'</div></div>'};
+V.paciente_chatbot=()=>hd('Chatbot','Consultas generales sobre patologías lisosomales. Es un servicio externo y no deriva a una persona.','40')+
+ '<div class="card"><div class="chat" id="chatbox">'+S.chat.map(m=>'<div class="msg '+(m.b?'b':'u')+'">'+esc(m.x)+'</div>').join('')+'</div><div class="row" style="margin-top:10px"><input type="text" id="f_chat" data-f="chat" style="flex:1" placeholder="Escribí tu pregunta"><button class="btn" data-a="chat">Enviar</button></div><div class="row" style="margin-top:8px">'+['¿Qué es la enfermedad de Fabry?','¿Qué es una patología lisosomal?','¿Cómo es el estudio de exoma?'].map(q=>'<button class="btn ghost sm" data-a="chatQ" data-p="'+q+'">'+q+'</button>').join('')+'</div></div>';
+/* avisos */
+V.avisos=()=>{const L=S.avisos[key()]||[];return hd('Avisos pendientes','Lo que tenés pendiente según tu rol. Los avisos se muestran en la plataforma y por mail, nunca en el celular.','41')+
+ '<div class="card">'+(L.length?'<div>'+L.map((a,i)=>'<div class="row" style="padding:10px 0;border-bottom:1px solid var(--line)"><span class="chip '+(a.leido?'':'acc')+'">'+(a.leido?'Leído':'Nuevo')+'</span><span style="flex:1;min-width:200px">'+esc(a.x)+'<div class="muted" style="font-size:12px">'+a.t+'</div></span><button class="btn sec sm" data-a="abrirAviso" data-p="'+i+'">Abrir</button></div>').join('')+'</div>':'<p class="muted">No hay avisos pendientes. Cuando haya novedades para tu rol, aparecen acá.</p>')+'</div>'};
+/* administrativo */
+V.adm_presupuestos=()=>{const L=Object.values(S.st).filter(s=>s.estado==='Creado'&&!s.pres);const sel_=ctx.sid&&S.st[ctx.sid]&&!S.st[ctx.sid].pres?S.st[ctx.sid]:null;
+ return hd('Presupuestos','Bandeja de estudios en estado Creado sin presupuesto. La tarifa es fija y no se puede modificar.','11')+
+ '<div class="grid2" style="align-items:start"><div class="card"><h2>Estudios por presupuestar <span class="chip acc">'+L.length+'</span></h2><div class="tw"><table><tr><th>Paciente</th><th>Genes</th><th>Estado</th></tr>'+L.map(s=>'<tr class="click" data-a="selS" data-p="'+s.id+'"><td>'+esc(full(S.pat[s.pid]))+'</td><td class="mono">'+s.genes.join(', ')+'</td><td>'+chipEstado(s)+'</td></tr>').join('')+'</table></div>'+(L.length?'':'<p class="muted">No hay estudios para presupuestar.</p>')+'</div>'+
+ '<div class="card"><h2>Presupuesto</h2>'+(sel_?'<p><b>'+esc(full(S.pat[sel_.pid]))+'</b></p><dl class="kv"><dt>Lista de genes</dt><dd class="mono">'+sel_.genes.join(', ')+'</dd><dt>Cantidad de genes</dt><dd>'+sel_.genes.length+'</dd><dt>Tarifa</dt><dd>USD 500 hasta 5 genes + USD 30 por gen adicional</dd><dt>Importe</dt><dd><b style="font-size:20px">'+usd(price(sel_.genes.length))+'</b> <span class="chip">No editable</span></dd></dl><button class="btn" data-a="emitir" data-p="'+sel_.id+'" style="margin-top:12px">Emitir presupuesto</button>':'<p class="muted">Elegí un estudio de la bandeja.</p>')+'</div></div>'};
+V.adm_autorizaciones=()=>{const L=Object.values(S.st).filter(s=>s.cob&&(s.cob.aut==='pendiente'||s.cob.reaut));const x=ctx.sid&&S.st[ctx.sid]&&S.st[ctx.sid].cob&&(S.st[ctx.sid].cob.aut==='pendiente'||S.st[ctx.sid].cob.reaut)?S.st[ctx.sid]:null;
+ return hd('Autorizaciones de obra social','El administrativo obtiene la respuesta de la obra social por teléfono, fuera del sistema, y la registra acá. También atiende las demandas del paciente.','18 y 19')+
+ '<div class="grid2" style="align-items:start"><div class="card"><h2>Autorizaciones pendientes <span class="chip acc">'+L.length+'</span></h2><div class="tw"><table><tr><th>Paciente</th><th>Obra social</th><th>Situación</th></tr>'+L.map(s=>'<tr class="click" data-a="selS" data-p="'+s.id+'"><td>'+esc(full(S.pat[s.pid]))+'</td><td>'+s.cob.os+'</td><td>'+(s.cob.reaut?'<span class="chip warn">Demanda recibida</span>':'<span class="chip info">Pendiente</span>')+'</td></tr>').join('')+'</table></div>'+(L.length?'':'<p class="muted">No hay autorizaciones pendientes.</p>')+'</div>'+
+ '<div class="card"><h2>Registrar respuesta</h2>'+(x?'<p><b>'+esc(full(S.pat[x.pid]))+'</b> · '+x.cob.os+' ('+x.cob.pct+'%)</p>'+(x.cob.reaut?'<div class="note inf">El paciente subió <b>'+esc(x.cob.reaut)+'</b>. <button class="btn sec sm" data-a="toast" data-p="Descarga simulada: '+esc(x.cob.reaut)+'">Descargar demanda</button></div>':'')+sel('arta','Respuesta de la obra social',[['Autorizado','Autorizado'],['Rechazado','Rechazado']],{rr:1})+((ctx.f.arta||'Autorizado')==='Rechazado'?fld('motivo','Motivo del rechazo'):'')+'<button class="btn" data-a="regAut" data-p="'+x.id+'">Registrar respuesta</button>':'<p class="muted">Elegí un estudio de la lista.</p>')+'</div></div>'};
+V.adm_estudios=()=>{const q=(ctx.f.q||'').toLowerCase();const L=Object.values(S.st).filter(s=>!s.id.startsWith('t')).filter(s=>!q||full(S.pat[s.pid]).toLowerCase().includes(q)||S.pat[s.pid].dni.includes(q));
+ return hd('Estudios y muestras','Buscá un estudio por nombre o DNI, seguí la muestra y pedí un remuestreo cuando haga falta.','25 y 33')+'<div class="card"><div class="field" style="max-width:360px"><label for="f_q">Buscar por nombre o DNI</label><input type="text" id="f_q" data-f="q" data-rr="1" value="'+esc(ctx.f.q||'')+'"></div><div class="tw"><table><tr><th>Paciente</th><th>DNI</th><th>Estado</th></tr>'+L.map(s=>'<tr class="click" data-a="det" data-p="'+s.id+'"><td>'+esc(full(S.pat[s.pid]))+'</td><td class="mono">'+S.pat[s.pid].dni+'</td><td>'+chipEstado(s)+'</td></tr>').join('')+'</table></div></div>'};
+V.adm_lotes=()=>{const l=ctx.lote&&S.lotes.find(x=>x.id===ctx.lote);
+ return hd('Lotes y envíos','Los lotes se arman solos con las muestras que llegan al laboratorio central. Cerrado el lote, el sistema solicita el permiso del Ministerio de Salud y se programa el retiro con FedEx.','28, 29, 30, 31 y 32')+
+ '<div class="grid2" style="align-items:start"><div class="card"><h2>Lotes</h2><div class="tw"><table><tr><th>Lote</th><th>Estudios</th><th>Estado</th></tr>'+S.lotes.slice().reverse().map(x=>'<tr class="click" data-a="selLote" data-p="'+x.id+'"><td class="mono">'+x.id+'</td><td>'+x.est.length+' / 10</td><td><span class="chip '+(x.estado==='Abierto'?'':x.estado==='Sin permiso'?'bad':'info')+'">'+x.estado+'</span>'+(x.urgente?' <span class="chip bad">Pompe urgente</span>':'')+'</td></tr>').join('')+'</table></div></div>'+
+ '<div class="card"><h2>'+(l?'Lote '+l.id:'Detalle del lote')+'</h2>'+(l?'<dl class="kv"><dt>Estudios</dt><dd>'+l.est.length+' de 10</dd><dt>Estado</dt><dd>'+l.estado+(l.urgente?' · cerrado antes por Pompe urgente':'')+'</dd>'+(l.retiro?'<dt>Retiro FedEx</dt><dd>'+l.retiro+'</dd>':'')+'</dl>'+
+  (l.est.length?'<p class="muted" style="font-size:12px">Pacientes: '+l.est.map(id=>esc(full(S.pat[S.st[id].pid]))).join(', ')+'</p>':'')+
+  (l.estado==='Sin permiso'?'<div class="note err">La API del Ministerio de Salud no respondió. El retiro está deshabilitado.</div><button class="btn sec" data-a="reintentarPermiso" data-p="'+l.id+'">Reintentar permiso</button>':'')+
+  (l.permiso?'<div class="row"><button class="btn sec" data-a="toast" data-p="Descarga simulada: permiso_ministerio_salud.pdf">Descargar permiso del Ministerio de Salud</button></div>':'')+
+  (l.estado==='Con permiso'?'<hr><h2>Programar retiro con FedEx</h2><div class="grid2">'+sel('fdia','Día',['Vie 09/10','Mar 13/10','Mié 14/10','Jue 15/10'],{})+sel('fhora','Hora (9 a 18)',['09:00','11:00','14:00','16:00'],{})+'</div><button class="btn" data-a="programar" data-p="'+l.id+'">Programar retiro</button><p class="muted" style="font-size:12px">Cada lote se programa por separado. El sistema envía a FedEx el día, la hora y la URL del lote.</p>':'')+
+  (l.estado==='Retiro programado'?'<div class="note inf">Retiro programado. FedEx llamará a la URL del lote a la hora acordada (ver el simulador).</div>':''):'<p class="muted">Elegí un lote de la lista.</p>')+'</div></div>'};
+V.adm_crudos=()=>{const L=Object.values(S.st).filter(s=>s.estado==='En viaje a Corea');const x=ctx.sid&&S.st[ctx.sid]&&S.st[ctx.sid].estado==='En viaje a Corea'?S.st[ctx.sid]:null;
+ return hd('Datos crudos','Los datos crudos llegan de Corea por mail, fuera del sistema. Se cargan estudio por estudio, aunque hayan viajado en un lote.','34')+
+ '<div class="grid2" style="align-items:start"><div class="card"><h2>Estudios En viaje a Corea <span class="chip acc">'+L.length+'</span></h2><div class="tw"><table><tr><th>Paciente</th><th>Lote</th></tr>'+L.map(s=>'<tr class="click" data-a="selS" data-p="'+s.id+'"><td>'+esc(full(S.pat[s.pid]))+'</td><td class="mono">'+s.lote+'</td></tr>').join('')+'</table></div>'+(L.length?'':'<p class="muted">No hay estudios esperando datos crudos.</p>')+'</div>'+
+ '<div class="card"><h2>Cargar datos crudos</h2>'+(x?'<p><b>'+esc(full(S.pat[x.pid]))+'</b></p>'+fld('crudoname','Archivo de datos crudos (texto con A, C, T, G)',{def:'datos_crudos_'+x.id+'.txt'})+'<button class="btn" data-a="cargarCrudos" data-p="'+x.id+'">Cargar datos crudos</button><p class="muted" style="font-size:12px">Si el archivo está vacío o no es un .txt, el sistema rechaza la carga.</p>':'<p class="muted">Elegí un estudio.</p>')+'</div></div>'};
+/* transportista */
+V.trans_orden=()=>{
+ const pend=[...new Set(Object.values(S.st).filter(s=>s.estado==='Listo para retirar').map(s=>s.turno.lab))];
+ const done=S.picked;const todos=[...done,...pend];const next=pend[0];
+ const route=todos.map(id=>LAB(id));const camino=Object.values(S.st).filter(s=>s.estado==='En camino al laboratorio central');
+ return hd('Orden del día','Recorrido fijo, calculado a la mañana por el módulo de optimización. No se pueden saltear paradas ni cambiar el orden.','26, 27 y 28')+
+ '<div class="grid2" style="align-items:start"><div class="card"><h2>Recorrido de hoy · Jueves 08/10</h2>'+(todos.length?mapSvg(route.map((l,i)=>({x:l.x,y:l.y,l:i+1,on:l.id===next,done:done.includes(l.id)})),{route:[...route,{x:300,y:150}]}):'<p class="muted">Sin recorrido para hoy.</p>')+'<p class="muted" style="font-size:12px">En fines de semana y feriados no se genera orden del día.</p></div>'+
+ '<div class="card"><h2>Paradas</h2>'+route.map((l,i)=>{const n=Object.values(S.st).filter(s=>s.turno&&s.turno.lab===l.id&&['Listo para retirar','En camino al laboratorio central'].includes(s.estado)).length;const d=done.includes(l.id);
+  return '<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)"><span class="chip '+(d?'good':l.id===next?'acc':'')+'">'+(d?'✓':i+1)+'</span><span style="flex:1;min-width:160px"><b>'+l.n+'</b><div class="muted" style="font-size:12px">'+n+' muestra'+(n===1?'':'s')+' para retirar</div></span>'+(l.id===next?'<button class="btn sm" data-a="recoger" data-p="'+l.id+'">Marcar como recogida</button>':'')+'</div>'}).join('')+
+ (todos.length?'':'<p class="muted">Sin recorrido para hoy.</p>')+
+ '<div style="margin-top:14px"><button class="btn" data-a="llegue" '+(!pend.length&&camino.length?'':'disabled')+'>Llegué al laboratorio central</button><p class="muted" style="font-size:12px">Al llegar, las muestras pasan a En laboratorio central y se incorporan al lote abierto.</p></div></div></div>'};
+/* bioinformático */
+V.bio_tareas=()=>{const L=Object.values(S.st).filter(s=>s.estado==='En el área de bioinformática').sort((a,b)=>(b.pompe-a.pompe));
+ return hd('Lista de tareas','Los estudios Pompe urgente aparecen primero y el resto por orden de llegada.','35')+'<div class="card"><div class="tw"><table><tr><th>Paciente</th><th>Genes</th><th>Prioridad</th><th></th></tr>'+L.map(s=>'<tr><td>'+esc(full(S.pat[s.pid]))+'</td><td class="mono">'+s.genes.join(', ')+'</td><td>'+(s.pompe?'<span class="chip bad">Pompe urgente</span>':'<span class="chip">Normal</span>')+'</td><td><button class="btn sm" data-a="tomar" data-p="'+s.id+'">Tomar estudio</button></td></tr>').join('')+'</table></div>'+(L.length?'':'<p class="muted">No hay estudios disponibles.</p>')+'</div>'+
+ (ctx.mine?'<div class="note ok">Tomaste el estudio. Ahora figura En análisis por un bioinformático y no aparece para los demás. <button class="btn sm" data-a="go" data-p="bio|analisis">Ir al análisis</button></div>':'')};
+V.bio_analisis=()=>{const L=Object.values(S.st).filter(s=>s.estado==='En análisis por un bioinformático');const s=ctx.sid&&S.st[ctx.sid]&&S.st[ctx.sid].estado==='En análisis por un bioinformático'?S.st[ctx.sid]:L[0];
+ if(!s)return hd('Análisis','','36')+'<div class="card muted">No tenés estudios en análisis. Tomá uno desde la lista de tareas.</div>';
+ const rg=ctx.reg=ctx.reg||{};
+ return hd('Análisis de '+esc(full(S.pat[s.pid])),'Registrá las variantes encontradas en cada gen solicitado. La clasificación la informa la Bioinformática API y no se puede editar.','36')+
+ '<div class="card"><h2>Genes solicitados '+(s.pompe?'<span class="chip bad">Pompe urgente</span>':'')+'</h2><div class="tw"><table><tr><th>Gen</th><th>Variante genética</th><th>Clasificación</th></tr>'+s.genes.map(g=>{const r=rg[g];return '<tr><td class="mono"><b>'+g+'</b></td><td><select data-reg="'+g+'"><option value="">Elegí una variante…</option>'+(VARIANTES[g]||[]).map((v,i)=>'<option value="'+i+'" '+(r&&r.i==i?'selected':'')+'>'+v[0]+'</option>').join('')+'<option value="none" '+(r&&r.i==='none'?'selected':'')+'>Sin variantes</option></select></td><td>'+(r&&r.i!=='none'?'<span class="chip '+(r.c==='Patogénica'?'bad':r.c==='VUS'?'warn':'good')+'">'+r.c+'</span>':r?'<span class="muted">Sin variantes</span>':'')+'</td></tr>'}).join('')+'</table></div><div style="margin-top:12px"><button class="btn" data-a="finalizar" data-p="'+s.id+'">Finalizar análisis</button></div><p class="muted" style="font-size:12px">Al finalizar, el sistema genera el resultado en PDF y avisa al médico tratante y al paciente.</p></div>'};
+/* ---------- render ---------- */
+function viewKey(){return role+'_'+view}
+function render(){
+  const R=ROLES[role];
+  const nav=R.nav.map(([k,l])=>{const n=k==='avisos'?(S.avisos[key()]||[]).filter(a=>!a.leido).length:0;return '<button class="'+(k===view?'on':'')+'" data-a="go" data-p="'+role+'|'+k+'"><span>'+l+'</span>'+(n?'<span class="badge">'+n+'</span>':'')+'</button>'}).join('');
+  const nm=role==='paciente'?full(S.pat[S.me]):R.u;
+  $('#side').innerHTML='<div class="who"><b>'+esc(nm)+'</b><span>'+R.n+'</span></div>'+nav;
+  $('#roleSel').innerHTML=Object.entries(ROLES).map(([k,r])=>'<option value="'+k+'" '+(k===role?'selected':'')+'>'+r.n+'</option>').join('');
+  $('#personaWrap').hidden=role!=='paciente';
+  $('#personaSel').innerHTML=Object.values(S.pat).filter(p=>!p.id.startsWith('x')&&Object.values(S.st).some(s=>s.pid===p.id)).map(p=>'<option value="'+p.id+'" '+(p.id===S.me?'selected':'')+'>'+esc(full(p))+'</option>').join('');
+  let fn=view==='avisos'?V.avisos:view==='det'?V.det:V[viewKey()];
+  $('#main').innerHTML=fn?fn():'<div class="card">Pantalla no disponible</div>';
+  document.querySelectorAll('tr.click').forEach(r=>r.tabIndex=0);
+  if(drawerOpen)renderDrawer();
+}
+const TOUR=[
+ ['medico','paciente_nuevo','Alta del paciente','Cargá síntomas hasta cumplir la regla de correspondencia clínica. Con Pompe y menos de 4 meses, el estudio queda como Pompe urgente.',null],
+ ['medico','estudio_nuevo','Solicitud del estudio','Elegí el paciente, sumá hallazgos secundarios y mirá cómo cambia el importe estimado.',null],
+ ['adm','presupuestos','Presupuesto','Emití el presupuesto de un estudio Creado. El importe sale de la tarifa y no se edita.',null],
+ ['paciente','mi_estudio','Cobertura y pago','Con el paciente Tomás Gómez: elegí obra social o pagá con un cupón de descuento.','p2'],
+ ['adm','autorizaciones','Autorización de la obra social','Registrá la respuesta que llegó por teléfono: Autorizado o Rechazado con motivo.',null],
+ ['paciente','mi_estudio','Turno de extracción','Con la paciente Julia Sosa: orden de extracción, consentimiento informado y cancelación sin costo.','p5'],
+ ['sim',null,'Laboratorio de extracción','Enviá la toma de muestra por Telegram. Con menos de 2 ml, avisa que hace falta un remuestreo.',null],
+ ['trans','orden','Orden del día','Marcá cada parada en orden y terminá con Llegué al laboratorio central.',null],
+ ['adm','lotes','Lotes y envíos','El lote L-014 tiene 9 estudios. Cuando llega el décimo se cierra y pide el permiso al Ministerio de Salud.',null],
+ ['adm','crudos','Datos crudos','Cargá los datos crudos que llegaron de Corea, estudio por estudio.',null],
+ ['bio','tareas','Análisis','Tomá un estudio (Pompe urgente va primero) y registrá una variante por gen.',null],
+ ['medico','resultado','Resultado','El médico ve positivo o negativo, variantes y clasificación, y puede pedir un reanálisis.',null]
+];
+const DESEOS=[['Dictado por voz del resumen de historia clínica','Pantalla Nuevo paciente.'],['Bot de Telegram del laboratorio de extracción','Simulador de actores externos, mensaje de toma de muestra.']];
+const SUPUESTOS=[
+ 'La lista de obras sociales y sus porcentajes de cobertura (OSDE 80%, Swiss Medical 70%, Galeno 60%, Sancor Salud 65%, IOMA 50%) es de ejemplo.',
+ 'El calendario de turnos de ejemplo trata el lunes 12/10 como feriado, porque la especificación dice que no hay turnos en feriados.',
+ 'Con 5 inasistencias se bloquea la reprogramación. Qué pasa con el pago y con el estudio queda pendiente de definir con el Product Owner.',
+ 'Remuestreo: el estudio vuelve a Creado conservando su pago o autorización, el turno anterior queda en el historial y el paciente saca un turno nuevo.',
+ 'Reanálisis: el estudio vuelve a Creado y se reutilizan los datos crudos. Si corresponde un nuevo presupuesto y un nuevo pago es una pregunta abierta para el Product Owner.',
+ 'Si la API del Ministerio de Salud no responde, el lote queda Sin permiso y el retiro con FedEx se deshabilita hasta reintentar.',
+ 'Los datos crudos solo se aceptan como archivo de texto (.txt) no vacío.',
+ 'El código de verificación válido en la demo es 123456.',
+ 'Los genes, las variantes y su clasificación de la Bioinformática API son datos de ejemplo.',
+ 'La vista Mi estudio muestra un solo estudio por paciente.'
+];
+function renderDrawer(){
+  const D=$('#drawer');let h='';
+  const head=(t,sub)=>'<div class="row"><b style="font-size:15px">'+t+'</b><button class="btn ghost sm" style="margin-left:auto" data-a="closeDr">Cerrar</button></div><p class="muted" style="font-size:12px">'+sub+'</p>';
+  if(drawerMode==='sim'){
+    const ts=Object.values(S.st).filter(s=>s.estado==='Turno sacado'),lp=S.lotes.filter(l=>l.estado==='Retiro programado');
+    h=head('Simulador de actores externos','Estas acciones las hacen sistemas o personas que no operan en la plataforma. Sirven para avanzar la demostración.')+(ctx.fromTour?'<button class="btn sec sm" data-a="tour">Volver al recorrido</button>':'')+
+    '<h3>Laboratorio de extracción (mensaje por Telegram al bot) <span class="chip warn">deseo</span></h3>'+(ts.length?'<label class="muted" style="font-size:12px" for="simTurno">Estudio con turno sacado</label><select id="simTurno">'+ts.map(s=>'<option value="'+s.id+'">'+esc(full(S.pat[s.pid]))+'</option>').join('')+'</select><div class="row" style="margin-top:6px"><input type="number" id="simMl" value="4" aria-label="Volumen de la muestra en ml" style="width:80px"> ml<button class="btn sm" data-a="simToma">Enviar toma de muestra</button></div><button class="btn ghost sm" style="margin-top:6px" data-a="simInasist">Registrar inasistencia</button><p class="muted" style="font-size:12px">Menos de 2 ml: muestra insuficiente.</p>':'<p class="muted" style="font-size:12px">Ningún estudio tiene turno sacado. Sacá un turno desde el rol Paciente.</p>')+
+    '<h3>API del Ministerio de Salud</h3><label class="row"><input type="checkbox" data-a-change="minDown" '+(S.ministerioDown?'checked':'')+'> No responde</label>'+
+    '<h3>FedEx (llamado a la URL del lote)</h3>'+(lp.length?'<label class="muted" style="font-size:12px" for="simLote">Lote con retiro programado</label><select id="simLote">'+lp.map(l=>'<option>'+l.id+'</option>').join('')+'</select> <button class="btn sm" data-a="simFedex">Retirar lote</button>':'<p class="muted" style="font-size:12px">Ningún lote tiene retiro programado. Programalo desde Lotes y envíos.</p>');
+  }else if(drawerMode==='sup'){
+    h=head('Supuestos y deseos','Lo que no sale de la entrevista al Product Owner se decidió para poder continuar y se documenta acá.')+
+    '<h3>Deseos <span class="chip warn">deseo</span></h3><p class="muted" style="font-size:12px;margin:0">El Product Owner los pidió sujetos a costo o factibilidad.</p><ul class="plain">'+DESEOS.map(d=>'<li><b>'+d[0]+'.</b> '+d[1]+'</li>').join('')+'</ul>'+
+    '<h3>Supuestos</h3><ul class="plain">'+SUPUESTOS.map(x=>'<li>'+x+'</li>').join('')+'</ul>';
+  }else{
+    h=head('Recorrido de la demo','Un camino sugerido para presentar el flujo completo, de la consulta al resultado. Cada paso te lleva a la pantalla.')+
+    '<ol>'+TOUR.map((t,i)=>'<li><span class="n">'+(i+1)+'</span><span style="flex:1"><b>'+t[2]+'</b><div class="muted" style="font-size:12.5px">'+t[3]+'</div></span><button class="btn sec sm" data-a="tourGo" data-p="'+i+'">Ir</button></li>').join('')+'</ol>';
+  }
+  D.innerHTML='<div class="drawer" role="dialog" aria-label="Panel lateral">'+h+'</div>';
+}
+/* ---------- acciones ---------- */
+const A={
+ go(p){const [r,v]=p.split('|');role=r;view=v;ctx.cancel=false;render();$('#main').scrollTop=0},
+ toast(p){toast(p)},
+ sim(){ctx.fromTour=false;openDr('sim')},sup(){openDr('sup')},tour(){openDr('tour')},closeDr(){openDr(null)},
+ big(){const on=document.body.classList.toggle('big');$('#bigBtn').setAttribute('aria-pressed',on)},
+ tourGo(i){const t=TOUR[+i];if(t[4])S.me=t[4];ctx.f={};ctx.cancel=false;
+  if(t[0]==='sim'){role='medico';view='estudios';render();ctx.fromTour=true;openDr('sim');return}
+  if(t[1]==='resultado'){role='medico';ctx.sid='s10';ctx.mapa=false;ctx.rean=null;view='det';render();return}
+  if(t[0]==='adm'&&t[1]==='lotes')ctx.lote='L-014';
+  role=t[0];view=t[1];render();$('#main').scrollTop=0},
+ reset(){S=seed();ctx={f:{}};for(const k in lastIx)delete lastIx[k];role='paciente';view='mi_estudio';openDr(null);render();toast('Demo reiniciada')},
+ login(){ctx.intentos=0;role='visit';view='dispositivo';render()},
+ verify(){const c=(ctx.f.code||'').trim();if(c==='123456'){ctx.intentos=0;ctx.f.code='';const m=(ctx.f.lmail||'tomas.gomez@mail.com').toLowerCase();const u=S.users.find(x=>x.m===m);if(u){role=u.r}else{role='paciente'}view=ROLES[role].nav[0][0];toast('Ingreso exitoso');render()}else{ctx.intentos=(ctx.intentos||0)+1;render()}},
+ registrar(){const f=ctx.f;if(!f.rnom||!f.rape||!f.rmail||!f.rpw){toast('Completá los campos obligatorios');return}const ex=S.users.find(u=>u.m===f.rmail);if(ex){toast('Ese mail ya está registrado');return}S.users.push({n:f.rnom+' '+f.rape,r:f.rrol||'medico',m:f.rmail,prov:''});toast('Registro creado. Ya podés ingresar con tus credenciales de acceso');role='visit';view='login';render()},
+ cambiarPw(){if(!ctx.f.n1||ctx.f.n1!==ctx.f.n2){toast('Las dos contraseñas no coinciden');return}toast('Contraseña guardada');role='paciente';view='mi_estudio';render()},
+ altaUsuario(){const f=ctx.f,r=f.urol||'medico';if(!f.unom||!f.umail){toast('Completá nombre y mail');return}if(S.users.some(u=>u.m===f.umail)){toast('Ese mail ya existe');return}if(r==='trans'){const pv=f.uprov||'Buenos Aires';if(S.users.some(u=>u.r==='trans'&&u.prov===pv)){toast('Ya existe un transportista para '+pv);return}S.users.push({n:f.unom,r,m:f.umail,prov:pv})}else S.users.push({n:f.unom,r,m:f.umail,prov:''});toast('Usuario creado. Credenciales enviadas por mail');f.unom='';f.umail='';render()},
+ nuevaPat(){ctx.edit='nueva';ctx.f.pcard='';ctx.f.psec=[];ctx.f.pn='';render()},
+ editPat(k){ctx.edit=k;ctx.f.pcard=S.patol[k].card;ctx.f.psec=[...S.patol[k].sec];render()},
+ delCard(){ctx.f.pcard='';render()},
+ cancelPat(){ctx.edit=null;render()},
+ guardarPat(){const k=ctx.edit;if(!ctx.f.pcard){toast('Falta el síntoma cardinal: la regla de correspondencia lo necesita');return}if(k==='nueva'){const n=(ctx.f.pn||'').trim();if(!n){toast('Escribí el nombre de la patología');return}if(Object.values(S.patol).some(p=>p.n.toLowerCase()===n.toLowerCase())){toast('La patología ya existe');return}S.patol['n'+(++uid)]={n,gen:['—'],card:ctx.f.pcard,sec:[...ctx.f.psec]}}else{S.patol[k].card=ctx.f.pcard;S.patol[k].sec=[...ctx.f.psec]}toast('Patología guardada');ctx.edit=null;render()},
+ genCupones(){const n=+ctx.f.ccant||5,p=+ctx.f.cpct||20;for(let i=0;i<n;i++)S.cups.push({code:'GL-'+(5000+S.cups.length*41),pct:p,estado:'Vigente',medico:null});toast(n+' cupones generados con '+p+'% de descuento');render()},
+ asigCupones(){const sel=ctx.sel||[];if(!ctx.f.cmed){toast('Elegí un médico tratante');return}if(!sel.length){toast('Seleccioná al menos un cupón');return}sel.forEach(c=>{const x=S.cups.find(y=>y.code===c);if(x&&!x.medico)x.medico=ctx.f.cmed==='Dr. Ricardo Molina'?'me':ctx.f.cmed});aviso('medico','El gerente médico te asignó '+sel.length+' cupones de descuento.');ctx.sel=[];toast('Cupones asignados. Se avisó al médico');render()},
+ det(id){ctx.sid=id;ctx.mapa=false;ctx.rean=null;view='det';render()},
+ selS(id){ctx.sid=id;render()},
+ selLote(id){ctx.lote=id;render()},
+ verMapa(){ctx.mapa=true;render()},
+ delTag(p){const [n,i]=p.split('|');ctx.f[n].splice(+i,1);render()},
+ dictar(){ctx.f.hc=(ctx.f.hc?ctx.f.hc+' ':'')+'Paciente con antecedentes de dolor en manos y pies desde la adolescencia, sin cardiopatía conocida.';render();toast('Texto dictado: revisalo y corregilo')},
+ addFam(){const n=(ctx.f.fnom||'').trim();if(!n){toast('Escribí el nombre del familiar');return}(ctx.f.fam=ctx.f.fam||[]).push({par:ctx.f.fpar||'Madre',nom:n,sint:ctx.f.fsint||[]});ctx.f.fnom='';ctx.f.fsint=[];ctx.famPdf=false;render()},
+ delFam(i){ctx.f.fam.splice(+i,1);ctx.famPdf=false;render()},
+ genFam(){ctx.famPdf=true;render();toast('El módulo de familiograma devolvió el PDF')},
+ altaPaciente(){const f=ctx.f;const req=['dni','nombre','apellido','nac','tel','mail','dx','sosp','hc'];if(req.some(k=>!f[k])||!(f.sint||[]).length){toast('Falta un dato obligatorio. Solo el familiograma puede quedar vacío');return}
+  const menor=age(f.nac)<18;if(menor&&(!f.padre||!f.padreMail)){toast('Cargá los datos del padre o la madre');return}
+  if(Object.values(S.pat).some(p=>p.dni===f.dni)){toast('El DNI ya existe: elegilo desde Nuevo estudio');return}
+  const c=corr(f.dx,f.sint);if(!c.ok){toast('No se cumple la regla de correspondencia clínica: el alta queda bloqueada');return}
+  const id='p'+(++uid);S.pat[id]={id,nombre:f.nombre,apellido:f.apellido,dni:f.dni,nac:f.nac,tel:f.tel,mail:f.mail,dx:f.dx,menor,padre:f.padre,padreMail:f.padreMail,pompeU:f.dx==='pompe'&&ageMonths(f.nac)<4};
+  ctx.creado=id;ctx.f={f:1};ctx.f={};render()},
+ otroPaciente(){ctx.creado=null;ctx.famPdf=false;ctx.f={};render()},
+ aEstudio(id){ctx.creado=null;ctx.estCreado=false;ctx.f={sp:id};role='medico';view='estudio_nuevo';render()},
+ addGen(){const g=ctx.f.gadd;if(!g)return;(ctx.f.gextra=ctx.f.gextra||[]).push(g);ctx.f.gadd='';render()},
+ delGen(g){ctx.f.gextra=ctx.f.gextra.filter(x=>x!==g);render()},
+ altaEstudio(p){const pid=ctx.f.sp;const pa=S.pat[pid];const id='s'+(++uid);S.st[id]={id,pid,genes:p.split(','),sec:!!ctx.f.hsec,estado:'Creado',pompe:!!pa.pompeU,pres:null,cob:null,cupon:null,turno:null,inasist:0,ml:null,lote:null,crudos:false,variantes:null,hist:[]};aviso('adm','Hay un estudio nuevo para presupuestar ('+full(pa)+').',id);ctx.estCreado=true;ctx.f={};render()},
+ asigPac(){if(!ctx.f.cup||!ctx.f.cpac){toast('Elegí un cupón y un paciente');return}const c=S.cups.find(x=>x.code===ctx.f.cup);c.medico='asignado:'+ctx.f.cpac;c.paciente=ctx.f.cpac;aviso('p:'+ctx.f.cpac,'Tu médico te asignó el cupón de descuento '+c.code+' ('+c.pct+'%).');toast('Cupón asignado al paciente');ctx.f.cup='';render()},
+ modo(m){ctx.f.modo=m;ctx.cupOk=null;ctx.cupErr='';render()},
+ confirmOS(){const s=Object.values(S.st).find(x=>x.pid===S.me),o=OS.find(x=>x[0]===ctx.f.os);if(!o)return;s.cob={modo:'os',os:o[0],pct:o[1],aut:'pendiente'};aviso('adm','Hay una autorización de obra social pendiente ('+full(S.pat[s.pid])+', '+o[0]+').',s.id);toast('Cobertura registrada. El estudio espera la autorización');ctx.f.modo='';render()},
+ usarCup(c){ctx.f.cupAp=c;A.aplicarCupon()},
+ aplicarCupon(){const s=Object.values(S.st).find(x=>x.pid===S.me);const c=S.cups.find(x=>x.code===(ctx.f.cupAp||'').trim());ctx.cupOk=null;if(!c)ctx.cupErr='El cupón no existe.';else if(c.estado!=='Vigente')ctx.cupErr='El cupón ya se usó. Se mantiene el importe original.';else{ctx.cupErr='';ctx.cupOk=c}render()},
+ pagar(){const s=Object.values(S.st).find(x=>x.pid===S.me);const pct=ctx.cupOk?ctx.cupOk.pct:0;if(ctx.cupOk){ctx.cupOk.estado='Usado';s.cupon=ctx.cupOk.code}s.cob={modo:'part'};s.pagado=true;s.pres.pagado=s.pres.monto*(1-pct/100);aviso('p:'+s.pid,'Pago confirmado. Ya podés sacar turno.',s.id);if(s.rean){s.estado='En el área de bioinformática';aviso('bio','Llegó un reanálisis a En el área de bioinformática.',s.id)}ctx.cupOk=null;ctx.f.cupAp='';ctx.f.modo='';toast('Pago confirmado');render()},
+ reaut(){const s=Object.values(S.st).find(x=>x.pid===S.me);const n=ctx.f.pdfname||'demanda.pdf';if(!/\.pdf$/i.test(n)){toast('El archivo debe ser PDF');return}s.cob.reaut=n;s.cob.aut='pendiente';aviso('adm','El paciente '+full(S.pat[s.pid])+' subió una demanda para reautorizar el estudio.',s.id);toast('Solicitud enviada al administrativo');render()},
+ pickLab(id){ctx.f.lab=id;ctx.f.hora='';render()},
+ pickDia(d){ctx.f.dia=d;ctx.f.hora='';render()},
+ pickHora(h){ctx.f.hora=h;render()},
+ reservar(){const s=Object.values(S.st).find(x=>x.pid===S.me);s.turno={lab:ctx.f.lab,fecha:ctx.f.dia||'Mar 13/10',hora:ctx.f.hora};if(s.estado==='Creado'){s.prev=s.estado}s.estado='Turno sacado';s.inasist=s.inasist||0;ctx.f.hora='';ctx.f.lab='';toast('Turno reservado. Orden y consentimiento publicados');role='paciente';view='mi_estudio';render()},
+ pedirCancel(){ctx.cancel=true;render()},noCancel(){ctx.cancel=false;render()},
+ cancelTurno(){const s=Object.values(S.st).find(x=>x.pid===S.me);s.turno=null;s.estado='Creado';ctx.cancel=false;toast('Turno cancelado sin costo. Ya podés sacar otro');render()},
+ chat(){const q=(ctx.f.chat||'').trim();if(!q)return;chatAsk(q)},chatQ(q){chatAsk(q)},
+ abrirAviso(i){const a=S.avisos[key()][+i];a.leido=true;if(a.sid){ctx.sid=a.sid;if(role==='paciente'){view='mi_estudio'}else if(['adm','medico'].includes(role)){view='det'}else if(role==='bio'){view='tareas'}else view=ROLES[role].nav[0][0]}render()},
+ emitir(id){const s=S.st[id];s.pres={monto:price(s.genes.length),emitido:true};aviso('p:'+s.pid,'Ya está disponible el presupuesto de tu estudio.',id);toast('Presupuesto emitido y publicado para el paciente');ctx.sid=null;render()},
+ regAut(id){const s=S.st[id];const r=ctx.f.arta||'Autorizado';if(r==='Rechazado'){if(!ctx.f.motivo){toast('Cargá el motivo del rechazo');return}s.cob.aut='Rechazado';s.cob.motivo=ctx.f.motivo;delete s.cob.reaut;aviso('p:'+s.pid,'La obra social rechazó el estudio.',id)}else{s.cob.aut='Autorizado';delete s.cob.reaut;aviso('p:'+s.pid,'Tu estudio fue autorizado. Ya podés sacar turno.',id);if(s.rean){s.estado='En el área de bioinformática';aviso('bio','Llegó un reanálisis a En el área de bioinformática.',id)}}toast('Respuesta registrada');ctx.sid=null;ctx.f.motivo='';render()},
+ remuestreo(id){const s=S.st[id];const l=S.lotes.find(x=>x.id===s.lote);if(l)l.est=l.est.filter(x=>x!==id);s.hist.push({t:'Hoy',x:'Remuestreo solicitado ('+(ctx.f.rmot||'Volumen insuficiente')+')'+(s.turno?'. Turno anterior: '+s.turno.fecha+' '+s.turno.hora+', '+LAB(s.turno.lab).n:'')+(s.ml!=null?'. Muestra de '+s.ml+' ml':'')+'. Sin costo para el paciente.'});s.lote=null;s.turno=null;s.estado='Creado';s.ml=null;aviso('p:'+s.pid,'Necesitamos una nueva muestra ('+(ctx.f.rmot||'Volumen insuficiente')+'). No tiene costo. Sacá un nuevo turno.',id);aviso('medico','Se solicitó un remuestreo para '+full(S.pat[s.pid])+'.',id);toast('Remuestreo solicitado. Se avisó al médico y al paciente');render()},
+ programar(id){const l=S.lotes.find(x=>x.id===id);l.estado='Retiro programado';l.retiro=(ctx.f.fdia||'Vie 09/10')+' a las '+(ctx.f.fhora||'09:00');toast('Retiro programado con FedEx');render()},
+ reintentarPermiso(id){const l=S.lotes.find(x=>x.id===id);if(S.ministerioDown){toast('La API del Ministerio sigue sin responder');return}l.estado='Con permiso';l.permiso=true;toast('Permiso recibido');render()},
+ cargarCrudos(id){const n=(ctx.f.crudoname||'').trim();if(!n){toast('El archivo está vacío: la carga se rechaza');return}if(!/\.txt$/i.test(n)){toast('Formato inválido: el archivo debe ser de texto (.txt)');return}const s=S.st[id];s.crudos=true;s.estado='En el área de bioinformática';s.lote=null;aviso('bio','Llegó un estudio nuevo a En el área de bioinformática ('+full(S.pat[s.pid])+').',id);toast('Datos crudos cargados. Se avisó a los bioinformáticos');ctx.sid=null;render()},
+ recoger(lab){Object.values(S.st).filter(s=>s.estado==='Listo para retirar'&&s.turno.lab===lab).forEach(s=>s.estado='En camino al laboratorio central');S.picked.push(lab);render()},
+ llegue(){const L=Object.values(S.st).filter(s=>s.estado==='En camino al laboratorio central');L.forEach(s=>{s.estado='En laboratorio central';sumarALote(s)});S.picked=[];toast('Muestras entregadas. El sistema las incorporó al lote');render()},
+ tomar(id){const s=S.st[id];s.estado='En análisis por un bioinformático';ctx.sid=id;ctx.mine=true;ctx.reg={};toast('Estudio tomado');render()},
+ finalizar(id){const s=S.st[id],rg=ctx.reg||{};const v=[];s.genes.forEach(g=>{const r=rg[g];if(r&&r.i!=='none')v.push({g,v:r.v,c:r.c})});if(s.genes.some(g=>!rg[g])){toast('Registrá una variante, o Sin variantes, en cada gen');return}s.variantes=v.length?v:[{g:s.genes[0],v:'Sin variantes',c:'—'}];s.estado='Resultado disponible';aviso('medico','El resultado del estudio de '+full(S.pat[s.pid])+' está disponible.',id);aviso('p:'+s.pid,'Tu resultado ya está disponible en la plataforma.',id);ctx.mine=false;ctx.reg={};toast('Análisis finalizado. Resultado en PDF generado');view='tareas';render()},
+ reanalisis(id){ctx.rean=id;render()},
+ confirmarRean(id){const s=S.st[id];const k=ctx.f.rdx;const nuevos=S.patol[k].gen.filter(g=>!s.genes.includes(g));s.genes=[...s.genes,...nuevos];s.estado='Creado';s.pres=null;s.cob=null;s.pagado=false;s.rean=true;s.turno=null;s.hist.push({t:'Hoy',x:'Reanálisis solicitado con el nuevo diagnóstico presuntivo: '+S.patol[k].n+'. Se reutilizan los datos crudos, sin nueva extracción.'});aviso('adm','Reanálisis solicitado para '+full(S.pat[s.pid])+': hay que emitir un nuevo presupuesto.',id);ctx.rean=null;ctx.f.rdx='';toast('Reanálisis solicitado. El administrativo emitirá el presupuesto');view='estudios';render()},
+ simToma(){const id=$('#simTurno').value,ml=+$('#simMl').value,s=S.st[id];s.ml=ml;if(ml<2){aviso('adm','Muestra insuficiente ('+ml+' ml) de '+full(S.pat[s.pid])+'. Corresponde solicitar remuestreo.',id);toast('Muestra insuficiente: se avisó al administrativo')}else{s.estado='Listo para retirar';toast('El bot registró la toma. Estudio: Listo para retirar')}render()},
+ simInasist(){const s=S.st[$('#simTurno').value];s.inasist=(s.inasist||0)+1;s.hist.push({t:'Hoy',x:'Inasistencia '+s.inasist+' de 5 al turno de extracción.'});aviso('p:'+s.pid,'Registramos una inasistencia a tu turno. Podés reprogramarlo.',s.id);toast('Inasistencia registrada ('+s.inasist+' de 5)');render()},
+ simFedex(){const id=$('#simLote').value,l=S.lotes.find(x=>x.id===id);l.estado='En viaje a Corea';l.est.forEach(e=>S.st[e].estado='En viaje a Corea');toast('FedEx retiró el lote: estudios En viaje a Corea');render()}
+};
+function openDr(mode){if(mode===null||(drawerOpen&&drawerMode===mode)){drawerOpen=false;$('#drawer').innerHTML=''}else{drawerOpen=true;drawerMode=mode;renderDrawer()}document.body.classList.toggle('dr',drawerOpen)}
+function chatAsk(q){S.chat.push({x:q});const t=q.toLowerCase();let r='Puedo responder dudas generales sobre las patologías lisosomales. Para consultas médicas personales, hablá con tu médico tratante.';
+ if(t.includes('fabry'))r='La enfermedad de Fabry es una patología lisosomal por déficit de la enzima alfa-galactosidasa A (gen GLA). Puede dar dolor en manos y pies, lesiones en la piel y compromiso del corazón y del riñón.';
+ else if(t.includes('lisosomal'))r='Las patologías lisosomales son enfermedades genéticas en las que falta una enzima que los lisosomas necesitan para degradar sustancias. Por eso se acumulan y afectan distintos órganos.';
+ else if(t.includes('exoma'))r='El estudio de exoma lee las regiones del ADN que codifican proteínas. Se hace con una muestra de sangre y analiza los genes asociados a la sospecha diagnóstica.';
+ S.chat.push({b:true,x:r});ctx.f.chat='';render();const b=$('#chatbox');if(b)b.scrollTop=b.scrollHeight}
+/* ---------- eventos ---------- */
+document.addEventListener('click',e=>{
+  const lab=e.target.closest('[data-lab]');if(lab&&lab.dataset.lab&&view==='turno'){A.pickLab(lab.dataset.lab);return}
+  const b=e.target.closest('[data-a]');if(!b||b.tagName==='SELECT'||b.tagName==='INPUT'&&b.type==='checkbox')return;const fn=A[b.dataset.a];if(fn)fn(b.dataset.p)});
+document.addEventListener('keydown',e=>{
+  const t=e.target;
+  if(e.key==='Escape'&&drawerOpen){openDr(null);return}
+  if((e.key==='Enter'||e.key===' ')&&t.matches&&t.matches('tr.click')){e.preventDefault();t.click();return}
+  if(e.key==='Enter'&&t.dataset&&t.dataset.sn){const u=$('#u_'+t.dataset.sn);const li=u&&!u.hidden&&u.querySelector('[data-pick]');if(li){e.preventDefault();li.dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))}}
+});
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.dataset.f){if(t.type==='radio'){if(t.checked)ctx.f[t.dataset.f]=t.value}else ctx.f[t.dataset.f]=t.value}
+  if(t.dataset.sn){const n=t.dataset.sn,v=t.value.trim().toLowerCase(),u=$('#u_'+n);if(v.length<3){u.hidden=true;return}
+    const h=SNOMED.filter(x=>x.toLowerCase().includes(v));u.innerHTML=h.length?h.map(x=>'<li data-pick="'+n+'|'+x+'">'+x+'</li>').join(''):'<li class="muted" style="cursor:default">Sin resultados. No se admite texto libre.</li>';u.hidden=false}
+});
+document.addEventListener('mousedown',e=>{const li=e.target.closest('[data-pick]');if(!li)return;e.preventDefault();const [n,x]=li.dataset.pick.split('|');
+  if(n==='pcardin'){ctx.f.pcard=x}else{const arr=ctx.f[n]=ctx.f[n]||[];if(!arr.includes(x))arr.push(x)}render()});
+document.addEventListener('change',e=>{const t=e.target;
+  if(t.dataset.f&&t.dataset.rr)render();
+  if(t.dataset.f&&t.tagName==='SELECT'&&!t.dataset.rr)ctx.f[t.dataset.f]=t.value;
+  if(t.dataset.chk){const s=ctx.sel=ctx.sel||[];if(t.checked)s.push(t.dataset.chk);else ctx.sel=s.filter(x=>x!==t.dataset.chk)}
+  if(t.dataset.chk2){ctx.f[t.dataset.chk2]=t.checked;render()}
+  if(t.dataset.reg){const g=t.dataset.reg;ctx.reg=ctx.reg||{};if(t.value==='')delete ctx.reg[g];else if(t.value==='none')ctx.reg[g]={i:'none'};else{const v=VARIANTES[g][+t.value];ctx.reg[g]={i:t.value,v:v[0],c:v[1]}}render()}
+  if(t.dataset.aChange==='addEsp'){if(t.value){(ctx.f.resp=ctx.f.resp||[]).push(t.value);render()}}
+  if(t.dataset.aChange==='minDown'){S.ministerioDown=t.checked}
+});
+$('#roleSel').addEventListener('change',e=>{role=e.target.value;view=ROLES[role].nav[0][0];ctx.cancel=false;ctx.sid=null;render()});
+$('#personaSel').addEventListener('change',e=>{S.me=e.target.value;ctx.f.modo='';render()});
+window.__proto={go:(r,v,c)=>{role=r;view=v;if(c)Object.assign(ctx,c);render()},ctx:()=>ctx,S:()=>S,A,render,setf:o=>Object.assign(ctx.f,o)};
+render();
+</script>
+</body>
+</html>
